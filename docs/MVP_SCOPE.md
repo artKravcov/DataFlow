@@ -12,6 +12,7 @@
 | Источник | CSV upload | CSV, JSON file, PostgreSQL, MySQL, REST GET |
 | Получатель | Скачиваемый CSV | CSV, PostgreSQL, MySQL, REST POST/PUT |
 | Преобразования | Filter, Map/Rename | То же + явное приведение типов |
+| Данные и schema | Dataset v1: schema + batch records; manual/simple CSV schema | Basic schema propagation, field mapping, simple inference |
 | Граф | Линейный через общий формат nodes/edges | Один источник, несколько получателей, fan-out |
 | Запуск | Вручную, асинхронно | То же |
 | Наблюдение | Статусы запуска и узлов, ошибка, результат | История, фильтры, структурированные логи |
@@ -27,10 +28,12 @@ CSV/JSON — файловые assets, а не подключения с credenti
 - Предлагаемые начальные лимиты: 50 узлов, 100 связей, 10 000 записей в наборе, 10 MiB входного файла/HTTP-ответа, 50 MiB промежуточных сериализованных данных на запуск, 5 минут на запуск, 30 секунд на одну внешнюю операцию. Значения конфигурируемые; это защитные пределы, не показатели производительности.
 - При первой ошибке прекращаем запуск, ещё не начатые узлы получают `skipped`. Уже записанные внешние данные не откатываются глобально.
 - Общего автоматического retry нет. Повтор пользователем создаёт новый Execution и может повторить побочные эффекты.
+- Dataset v1 batch-oriented. Chunking, pagination, streaming, backpressure и distributed execution — точки расширения, не обязательные функции MVP.
+- Schema помогает UI и validation, но не является абсолютной гарантией качества данных. Runtime всё равно проверяет отсутствующие поля, типы и лимиты во время исполнения.
 
 ## После MVP
 
-Расписания; Sort/Group; Join/Aggregate; условия; полноценная schema evolution; большие объёмы и streaming; автоматические безопасные retries; WebSockets; входящие webhooks; Google Ads/Analytics/Sheets; SDK, AI, MCP, subpipelines; распределённое исполнение.
+Расписания; Sort/Group; Join/Aggregate; Data Quality; Deduplicate; условия; schema inference/evolution; lineage; большие объёмы и streaming; автоматические безопасные retries; WebSockets; входящие webhooks; Google Ads/Analytics/Sheets; SDK, AI, MCP, subpipelines; распределённое исполнение.
 
 S3 не входит в начальный план. Возвращаться к нему только при новой потребности, не добавлять MinIO как скрытую обязательную зависимость.
 

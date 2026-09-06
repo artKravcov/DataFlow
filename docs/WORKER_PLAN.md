@@ -33,11 +33,11 @@ Worker буферизует ограниченный набор событий �
 1. Получить snapshot и проверенные credentials через claim.
 2. Проверить поддерживаемые schema/type versions и лимиты.
 3. Выполнить топологическую сортировку с устойчивым порядком по node ID среди готовых узлов.
-4. Для каждого узла записать running, вызвать handler, проверить output, записать succeeded.
-5. Освобождать промежуточные данные после последнего потребителя; весь запуск под общим byte/row budget.
+4. Для каждого узла записать running, вызвать handler, проверить output Dataset/schema, записать succeeded и data metrics.
+5. Освобождать промежуточные Dataset batches после последнего потребителя; весь запуск под общим byte/row budget.
 6. При ошибке остановить дальнейшие узлы, передать безопасный error code/message и завершить failed.
 
-Интерфейс handler концептуально: `execute(config, input, context) -> output`. Context содержит timeout/cancellation signal, ограниченный logger, resolver connections/assets и resource budget. Source не получает input, destination возвращает metadata результата, не ещё один records port.
+Интерфейс handler концептуально: `execute(config, inputDataset, context) -> outputDataset | nodeResult`. Context содержит timeout/cancellation signal, ограниченный logger, resolver connections/assets и resource budget. Source не получает input и создаёт Dataset; transform возвращает новый Dataset со schema; destination возвращает metadata результата, не ещё один records port.
 
 ## Внешние эффекты
 

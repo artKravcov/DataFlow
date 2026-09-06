@@ -36,10 +36,10 @@
 | POST /organizations/{org}/pipelines/{pipeline}/archive | Архивировать |
 | POST /organizations/{org}/pipelines/{pipeline}/executions | Запустить, 202 |
 | GET /organizations/{org}/executions | История; фильтры pipeline_id/status/project_id |
-| GET /organizations/{org}/executions/{execution} | Snapshot, статусы узлов, output assets |
+| GET /organizations/{org}/executions/{execution} | Snapshot, статусы узлов, output assets, data metrics |
 | GET /organizations/{org}/executions/{execution}/logs | Журнал с cursor |
 | GET /organizations/{org}/overview | Активные и недавние запуски |
-| GET /node-types | Доступные типы, порты, версии и config schema |
+| GET /node-types | Доступные типы, категории, порты, версии, config schema, input/output contracts и schema propagation hints |
 
 В MVP проверка подключения выполняется при запуске с понятной ошибкой узла. Отдельный асинхронный «Test connection» можно добавить в v1; не выполнять сетевые проверки без лимитов в CRUD-запросах.
 
@@ -51,7 +51,7 @@
 
 ## Сохранение графа
 
-Body: `{ "revision": 3, "graph": { "schema_version": 1, "nodes": [], "edges": [] } }`. Успех возвращает revision 4. Пустой draft разрешён к сохранению, но не к запуску. На save проверяются форма, типы, порты, отсутствие циклов и принадлежность ссылок; validate/run дополнительно требуют полного связного графа и обязательной конфигурации.
+Body: `{ "revision": 3, "graph": { "schema_version": 1, "nodes": [], "edges": [] } }`. Успех возвращает revision 4. Пустой draft разрешён к сохранению, но не к запуску. На save проверяются форма, типы, порты, отсутствие циклов, принадлежность ссылок и известная часть schema contracts; validate/run дополнительно требуют полного связного графа и обязательной конфигурации. Если schema неизвестна до исполнения, API возвращает предупреждение/diagnostic вместо ложной гарантии.
 
 PATCH connection не возвращает credentials: ответ содержит `has_credentials` и безопасную metadata. Отсутствие поля credentials означает сохранить старые; очистка — отдельное явное действие с валидацией. Любое изменение config/credentials увеличивает revision.
 

@@ -26,6 +26,8 @@
 | P08 | Локальные assets через Laravel, без S3/MinIO | Следует ограничению пользователя, подходит одному host |
 | P09 | Полные ограниченные наборы в памяти | Обучаемый runtime; большие данные требуют следующего этапа |
 | P10 | Polling в MVP | Меньше инфраструктуры для первой истории выполнения |
+| P11 | Dataset v1 = schema + batch records | Фокус на data workflows; streaming/chunking остаются точками расширения |
+| P12 | Schema-aware builder и mapping развивать постепенно | Польза пользователю до сложного inference; runtime validation остаётся обязательной |
 
 Все P — рабочие defaults для реализации, не утверждение об уже существующем коде. Если тест протокола показывает лучшую альтернативу P04, записать ADR и синхронно изменить API/worker/execution docs до развития runtime. Не смешивать два протокола случайно.
 
@@ -40,6 +42,10 @@
 | Лимиты данных и retention | M3 / до публичного доступа | Лимиты из MVP_SCOPE; ручная административная очистка |
 | Приоритет Google Ads/Analytics/Sheets | v2 | Сначала базовые REST/DB/files |
 | Join, timezone/DST и branch scheduling semantics | Соответствующий этап | Не реализовывать предположения заранее |
+| Минимальный формат DataSchema и nullable/unknown semantics | T05 | Простые типы из NODE_CONTRACT, JSON shape в fixtures |
+| Schema inference для CSV/JSON/REST | M4/v1 | Manual schema или простой inference from sample |
+| Data Quality split valid/invalid records | v2 | До этого нарушения завершают узел ошибкой либо пишутся в логи |
+| PipelineVersion records отдельно от revision/snapshot | Перед audit/rollback | Execution snapshot считается источником истины запуска |
 
 Эти вопросы не требуют остановить подготовку репозитория. Уточнение нужно тогда, когда ответ меняет текущую реализацию; обычные технические детали агент выбирает и документирует сам.
 
