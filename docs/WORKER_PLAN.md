@@ -1,0 +1,50 @@
+# План worker и доставки задач
+
+Это предлагаемое решение v0.1. Оно сохраняет стек Laravel/Redis/Node, не требует совместимости сериализованных PHP jobs с Node. На этапе worker нужен небольшой интеграционный тест реального транспорта до добавления коннекторов.
+
+## Транспорт
+
+Redis Stream `dataflow:executions:v1`, consumer group `workers-v1`. Outbox dispatcher Laravel публикует JSON envelope:
+
+```json
+{"message_version":1,"message_id":"<outbox-uuid>","execution_id":"<execution-uuid>"}
+```
+
+Никаких credentials, записей пользователя и полного графа в Redis. Получив сообщение, worker обращается к internal claim API. Laravel атомарно назначает owner запуска и lease. Только подтверждённый claim разрешает исполнение. Сторонние Laravel queues, если появятся для почты, используют отдельные ключи и не читаются этим worker.
+
+## Публикация и восстановление
+
+Execution и outbox создаются вместе. Dispatcher читает непубликованные записи, публикует, затем помечает published_at. Сбой между публикацией и пометкой даёт дубликат — это допустимо.
+
+Предлагаемый цикл reconciler раз в 15 секунд: повторно публиковать queued executions без claim старше 30 секунд с backoff; после 10 минут ожидания пометить failed с QUEUE_TIMEOUT. Это восстанавливает queued work после потери Redis независимо от published_at. Reconciler реализуется как процесс Laravel с распределённой блокировкой, затем может вызываться scheduler.
+
+Worker подтверждает stream message после успешного claim: дальнейшее состояние долговечно в PostgreSQL, recovery отвечает watchdog. Если claim занят/terminal — подтвердить дубликат. Если API недоступен — не подтверждать; повторно обработать pending через reclaim по idle timeout. Неизвестная message_version или повреждённый envelope — журнал инфраструктуры и dead-letter stream без секретов; пользовательская работа останется queued и будет перепроверена reconciler.
+
+## Lease и события
+
+Начальные параметры: heartbeat каждые 10 секунд, lease 60 секунд. API хранит hash lease token, worker хранит token в памяти. Просроченный token не может продлить lease или записать новое событие. Watchdog атомарно переводит просроченный running → failed с WORKER_LOST; текущий узел failed, pending узлы skipped.
+
+Worker буферизует ограниченный набор событий и посылает последовательно, с event_id и sequence. Повтор после сетевого сбоя использует те же IDs. API подтверждает принятый sequence; worker не сообщает succeeded до подтверждения всех node results и фиксации output assets. Повтор финального события после потерянного ответа должен быть идемпотентным.
+
+Если heartbeat не удаётся подтвердить до истечения lease, worker прекращает запуск следующих операций и пытается отменить текущую. Внешний запрос уже мог быть выполнен: lease не отменяет запись в чужой системе. Поэтому **потерянный running execution автоматически не запускается заново**. UI сообщает о возможных частичных изменениях.
+
+## Runtime
+
+1. Получить snapshot и проверенные credentials через claim.
+2. Проверить поддерживаемые schema/type versions и лимиты.
+3. Выполнить топологическую сортировку с устойчивым порядком по node ID среди готовых узлов.
+4. Для каждого узла записать running, вызвать handler, проверить output, записать succeeded.
+5. Освобождать промежуточные данные после последнего потребителя; весь запуск под общим byte/row budget.
+6. При ошибке остановить дальнейшие узлы, передать безопасный error code/message и завершить failed.
+
+Интерфейс handler концептуально: `execute(config, input, context) -> output`. Context содержит timeout/cancellation signal, ограниченный logger, resolver connections/assets и resource budget. Source не получает input, destination возвращает metadata результата, не ещё один records port.
+
+## Внешние эффекты
+
+В MVP нет общего auto-retry. Чтение и запись имеют deadline. DB destination использует одну транзакцию на ограниченный набор; потеря подтверждения commit всё равно может оставить неизвестный результат. Upsert снижает риск дублей, но не гарантирует отсутствие повторных triggers. REST idempotency key допустим только если конкретный получатель документированно его поддерживает.
+
+Ручной повтор создаёт новый Execution; интерфейс до отправки повторной команды поясняет, что внешние изменения могли сохраниться. CSV artifact публикуется как ready только после полной загрузки и checksum; частичный файл недоступен на скачивание. Загрузку идентифицировать парой execution_id + snapshot_node_id, чтобы повтор передачи не создавал второй результат.
+
+## Проверки до расширения
+
+Реальные Redis и Laravel/Node: повтор envelope, падение dispatcher после publish, потерянный claim response, недоступный API, истечение lease, позднее событие, повтор final event, потеря Redis, ошибка после успешной внешней записи. Ожидания описаны в [EXECUTION_FLOW](EXECUTION_FLOW.md).

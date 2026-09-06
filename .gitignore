@@ -1,0 +1,24 @@
+# Secrets and local environment
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencies and generated builds
+**/node_modules/
+**/vendor/
+**/dist/
+**/coverage/
+**/.vite/
+**/*.tsbuildinfo
+
+# Local databases and runtime state
+backend/database/*.sqlite
+backend/storage/*.key
+
+# Logs and OS/editor files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+codex-prompts/*
