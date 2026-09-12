@@ -27,11 +27,15 @@ Laravel — единственный писатель в БД приложени
 
 ## Текущее состояние
 
-Завершён M0/T01: Git-репозиторий, Laravel 13.17 backend, Vue 3 + TypeScript + Vite frontend и минимальный Node.js + TypeScript worker созданы в соответствующих каталогах. Добавлены Dockerfiles, Nginx gateway и `compose.yaml` с PostgreSQL, Redis и именованными volumes. Backend публикует liveness `/api/health` и readiness `/api/ready`; readiness проверяет подключение к PostgreSQL и Redis, а также отсутствие неприменённых миграций.
+Завершены M0/T01 и foundation T02–T03. Помимо исходного каркаса с Laravel, Vue, worker, Docker Compose, PostgreSQL, Redis и gateway, backend теперь содержит session/CSRF authentication через Sanctum, users, organizations, memberships и projects. Регистрация атомарно создаёт пользователя, personal organization и owner membership. Роли `owner`, `editor`, `viewer` существуют в membership; управление участниками и invitations намеренно отложены.
 
-Фактически проверены: `frontend` type-check и production build, `worker` type-check, build и запуск с exit code 0, сборка Compose-образов, healthchecks PostgreSQL/Redis/backend/frontend, доступность gateway и успешный ответ `/api/ready` после `php artisan migrate --force` внутри backend-контейнера. Команды запуска и остановки находятся в [README](README.md).
+Реализованы `register`, `login`, `logout`, `/me`, tenant-scoped CRUD проектов и архивирование. Laravel проверяет membership для organization и повторно ограничивает каждый nested project выбранной organization; чужие ресурсы скрываются ответом 404, viewer не может изменять или архивировать. API использует success/error envelopes и server-generated `request_id`. Factories и безопасный seed создают две demo-организации без пользователей, паролей и других секретов.
 
-Ограничения этапа: нет auth, организаций, доменных CRUD, pipeline engine, очереди Redis Streams и доменных миграций. Worker намеренно не остаётся работающим и не выполняет задания. Следующая задача: [002 — auth, организации и проекты](codex-prompts/002-backend-foundation.md).
+Фактически проверены: прежние проверки T01, а также `docker compose exec backend php artisan test` — 11 passed, 40 assertions на отдельной PostgreSQL базе `dataflow_test`. Набор покрывает регистрацию с personal organization/owner membership, login, `/me`, logout, создание и валидацию проектов, tenant isolation через чужой nested ID, недостаточную роль viewer и архивирование. Команды запуска, остановки и тестов находятся в [README](README.md).
+
+Ограничения этапа: frontend foundation ещё не реализован; нет invitations/member management, connections, assets, Dataset/DataSchema, pipelines, graph validation, executions, Redis Streams и runtime worker. Schema-aware рамка сохраняется: Dataset v1 и schema contracts появятся внутри уже созданных tenant boundaries в T04, а не как произвольный JSON runtime.
+
+Следующий этап: 003 — frontend foundation для same-origin auth, получения `/me`, выбора organization и списка проектов. Затем 004 — pipeline domain с Dataset/DataSchema contracts, schema-aware node registry и graph API; перед ним необходимо читать [NODE_CONTRACT](docs/NODE_CONTRACT.md).
 
 ## Что читать для задачи
 

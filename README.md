@@ -79,6 +79,20 @@ docker compose down
 
 Именованные volumes сохраняют данные PostgreSQL, Redis и файлы приложения. Не используйте `docker compose down --volumes`, если хотите сохранить локальные данные.
 
+## Backend tests
+
+Feature tests выполняются на отдельной PostgreSQL базе `dataflow_test`, а не на основной локальной базе приложения. Новый PostgreSQL volume создаёт её автоматически. Для уже существующего volume создайте её один раз, используя локального пользователя из `.env` (в стандартной конфигурации это `dataflow`):
+
+```powershell
+docker compose exec postgres psql -U dataflow -d postgres -c "CREATE DATABASE dataflow_test;"
+```
+
+Затем выполните тесты внутри backend-контейнера:
+
+```powershell
+docker compose exec backend php artisan test
+```
+
 ## Назначение процессов
 
 - **frontend**: Vue-интерфейс, доступный пользователю через gateway.

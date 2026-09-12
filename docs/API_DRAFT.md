@@ -6,7 +6,25 @@
 
 Успех: `{ "data": ... }`; списки дополнительно возвращают `meta` с пагинацией. Ошибка: `{ "error": { "code": "GRAPH_INVALID", "message": "...", "fields": {}, "request_id": "..." } }`. 401 — вход нужен; 403 — недостаточная роль; чужой tenant resource — 404; 409 — конфликт revision/активная работа; 422 — валидация; 413 — превышение объёма.
 
-Организация в URL не является разрешением. Каждый вложенный ID проверяется на принадлежность и роль. Время — ISO 8601 UTC, ID — строки. Списки ограничены: по умолчанию 25, максимум 100.
+Организация в URL не является разрешением. Каждый вложенный ID проверяется на принадлежность и роль. Время — ISO 8601 UTC. В foundation T02–T03 API возвращает числовые PostgreSQL ID; переход на внешний строковый ID требует отдельного согласованного изменения контракта. Списки ограничены: по умолчанию 25, максимум 100.
+
+## Реализовано в foundation T02–T03
+
+Browser-клиент работает через same-origin session Sanctum. Перед изменяющим запросом он получает `GET /sanctum/csrf-cookie` вне префикса `/api/v1`, после чего отправляет session cookie и URL-decoded значение cookie `XSRF-TOKEN` в заголовке `X-XSRF-TOKEN`. Logout инвалидирует session и обновляет CSRF token.
+
+Уже доступны следующие маршруты:
+
+| Метод и путь | Назначение |
+|---|---|
+| POST /auth/register | Создаёт User, personal Organization и owner Membership в одной транзакции; открывает session |
+| POST /auth/login | Вход через same-origin session |
+| POST /auth/logout | Выход из session |
+| GET /me | User и доступные организации с ролью membership |
+| GET/POST /organizations/{org}/projects | Список неархивных проектов / создание |
+| GET/PATCH /organizations/{org}/projects/{project} | Чтение / изменение проекта |
+| POST /organizations/{org}/projects/{project}/archive | Устанавливает `archived_at`; проект исчезает из обычного списка |
+
+Для проектов `owner` и `editor` могут создавать, изменять и архивировать; `viewer` только читает. Чужая organization или вложенный resource возвращают `404 RESOURCE_NOT_FOUND`, недостаточная роль в доступной organization — `403 FORBIDDEN`. Реализованные ошибки также включают `401 UNAUTHENTICATED`, `419 CSRF_TOKEN_MISMATCH` и `422 VALIDATION_FAILED`; каждая содержит `request_id` и соответствует общему error envelope. Проверка активных executions при архивировании и ответ `409` появятся вместе с execution domain, а не в foundation.
 
 ## Пользовательские маршруты
 
