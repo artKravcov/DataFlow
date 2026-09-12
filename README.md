@@ -79,6 +79,32 @@ docker compose down
 
 Именованные volumes сохраняют данные PostgreSQL, Redis и файлы приложения. Не используйте `docker compose down --volumes`, если хотите сохранить локальные данные.
 
+## Локальные demo-пользователи
+
+Для учебной проверки ролей заполните в локальном `.env` (файл не попадает в Git):
+
+```dotenv
+DATAFLOW_DEMO_ADMIN_EMAIL=artKravcov@inbox.lv
+DATAFLOW_DEMO_PASSWORD=выберите-локальный-пароль-не-короче-12-символов
+```
+
+После изменения `.env` пересоздайте backend и выполните seed:
+
+```powershell
+docker compose up --build -d backend
+docker compose exec backend php artisan db:seed
+```
+
+Seed идемпотентен: его можно выполнять повторно. Он создаёт две demo-организации, делает указанный admin email `owner` во всех существующих организациях и добавляет в `DataFlow Demo Organization` ещё три роли. Все четыре аккаунта используют пароль из `DATAFLOW_DEMO_PASSWORD`:
+
+| Пользователь | Роль |
+|---|---|
+| `artKravcov@inbox.lv` | owner во всех организациях |
+| `demo-owner@dataflow.local` | owner |
+| `demo-editor@dataflow.local` | editor |
+| `demo-viewer@dataflow.local` | viewer |
+
+Проверяйте по очереди: owner и editor создают/редактируют проект; viewer видит его, но не может изменить; admin переключается между двумя организациями. Это только локальные учебные аккаунты, не механизм production provisioning.
 ## Backend tests
 
 Feature tests выполняются на отдельной PostgreSQL базе `dataflow_test`, а не на основной локальной базе приложения. Новый PostgreSQL volume создаёт её автоматически. Для уже существующего volume создайте её один раз, используя локального пользователя из `.env` (в стандартной конфигурации это `dataflow`):

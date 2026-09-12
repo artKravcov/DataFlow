@@ -58,6 +58,8 @@ services:
       FILESYSTEM_DISK: ${FILESYSTEM_DISK}
       MAX_INPUT_BYTES: ${MAX_INPUT_BYTES}
       MAX_EXECUTION_SECONDS: ${MAX_EXECUTION_SECONDS}
+      DATAFLOW_DEMO_ADMIN_EMAIL: ${DATAFLOW_DEMO_ADMIN_EMAIL:-}
+      DATAFLOW_DEMO_PASSWORD: ${DATAFLOW_DEMO_PASSWORD:-}
     volumes:
       - app_files:/var/www/html/storage/app
     depends_on:
