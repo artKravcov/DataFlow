@@ -1,19 +1,21 @@
 # Первые задачи разработки
 
-Все задачи пока **не начаты**. Отмечать готовность после фактической проверки. Номера T обозначают небольшие единицы; prompts могут охватывать несколько связанных T.
+Статусы ниже отражают фактическое состояние на 4 октября 2026 года. Номера T обозначают небольшие единицы; prompts могут охватывать несколько связанных T. Завершённой считается только задача с указанной фактической проверкой.
 
-| ID | Задача | Зависит от | Проверяемый результат |
-|---|---|---|---|
-| T01 | Создать базовые приложения и Compose | Документация | Health endpoint, frontend shell, worker process; README запуска |
-| T02 | Auth и personal organization | T01 | Register/login/logout; membership создаётся атомарно |
-| T03 | Projects CRUD + policies | T02 | Две организации изолированы; архивирование |
-| T04 | Frontend auth/projects | T03 | Пользователь создаёт проект через браузер |
-| T05 | Pipeline models + registry + graph API + Dataset/Schema contract | T03 | Revision, cycle validation, неизвестные типы отвергаются; fixtures описывают Dataset v1 |
-| T06 | Визуальный schema-aware редактор | T04,T05 | Собрать и сохранить CSV граф без JSON/code input; Filter/Map используют поля schema, если она известна |
-| T07 | FileAsset upload/download | T03 | CSV загружается с лимитом, чужой файл недоступен |
-| T08 | Execution snapshot + outbox + internal API | T05,T07 | Атомарное создание, idempotency, claim/events/lease tests |
-| T09 | Redis dispatcher + Node Dataset runtime | T08 | Реальная доставка, CSV/filter/map, schema propagation, failed recovery |
-| T10 | Execution UI и сквозная приёмка | T06,T09 | Скачать ожидаемый CSV и понять ошибку неверного поля |
+| ID | Задача | Статус | Зависит от | Проверяемый результат |
+|---|---|---|---|---|
+| T01 | Создать базовые приложения и Compose | Готово | Документация | Health endpoint, frontend shell, worker process; README запуска |
+| T02 | Auth и personal organization | Готово | T01 | Register/login/logout; membership создаётся атомарно |
+| T03 | Projects CRUD + policies | Готово | T02 | Две организации изолированы; архивирование |
+| T04 | Frontend auth/projects | Готово | T03 | Пользователь создаёт проект через браузер |
+| T05 | Pipeline models + registry + graph API + Dataset/Schema contract | Следующая | T03 | Revision, cycle validation, неизвестные типы отвергаются; fixtures описывают Dataset v1 |
+| T06 | Визуальный schema-aware редактор | Не начато | T04,T05 | Собрать и сохранить CSV граф без JSON/code input; Filter/Map используют поля schema, если она известна |
+| T07 | FileAsset upload/download | Не начато | T03 | CSV загружается с лимитом, чужой файл недоступен |
+| T08 | Execution snapshot + outbox + internal API | Не начато | T05,T07 | Атомарное создание, idempotency, claim/events/lease tests |
+| T09 | Redis dispatcher + Node Dataset runtime | Не начато | T08 | Реальная доставка, CSV/filter/map, schema propagation, failed recovery |
+| T10 | Execution UI и сквозная приёмка | Не начато | T06,T09 | Скачать ожидаемый CSV и понять ошибку неверного поля |
+
+Фактические результаты T01–T04 и выполненные проверки перечислены в [PROJECT_CONTEXT](../PROJECT_CONTEXT.md). Трекер прототипа для курсовой работы находится в [PROTOTYPE_PLAN](PROTOTYPE_PLAN.md). T05–T10 составляют первый вертикальный срез; завершать M4 для сдачи прототипа не требуется.
 
 ## После первого среза
 

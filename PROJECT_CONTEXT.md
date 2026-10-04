@@ -44,6 +44,7 @@ Laravel — единственный писатель в БД приложени
 - Контракты: [API_DRAFT](docs/API_DRAFT.md), [NODE_CONTRACT](docs/NODE_CONTRACT.md).
 - Исполнение: [EXECUTION_FLOW](docs/EXECUTION_FLOW.md), [WORKER_PLAN](docs/WORKER_PLAN.md).
 - Очередность: [ROADMAP](docs/ROADMAP.md), [FIRST_DEVELOPMENT_TASKS](docs/FIRST_DEVELOPMENT_TASKS.md).
+- Граница сдаваемого курсового прототипа: [PROTOTYPE_PLAN](docs/PROTOTYPE_PLAN.md).
 - Допущения: [DECISIONS_AND_QUESTIONS](docs/DECISIONS_AND_QUESTIONS.md).
 
 После реализации этапа обновить этот раздел: что работает, какие проверки пройдены, что осталось и какая задача следующая. Не переписывать продуктовую цель под случайно выбранную реализацию.

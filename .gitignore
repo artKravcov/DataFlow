@@ -22,3 +22,7 @@ Thumbs.db
 .idea/
 .vscode/
 codex-prompts/*
+
+output/
+tmp/
+tools/

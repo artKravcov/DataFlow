@@ -9,7 +9,7 @@ DataFlow — платформа, в которой пользователь ви
 1. [Продукт](docs/PRODUCT_BLUEPRINT.md) — зачем нужен сервис и как им пользоваться.
 2. [Границы MVP](docs/MVP_SCOPE.md) — что действительно нужно реализовать сначала.
 3. [Архитектура](docs/TECHNICAL_BLUEPRINT.md) и [домен](docs/DOMAIN_MODEL.md).
-4. [План разработки](docs/ROADMAP.md) и [первые задачи](docs/FIRST_DEVELOPMENT_TASKS.md).
+4. [План разработки](docs/ROADMAP.md), [первые задачи](docs/FIRST_DEVELOPMENT_TASKS.md) и [план курсового прототипа](docs/PROTOTYPE_PLAN.md).
 5. [Контекст агенту](PROJECT_CONTEXT.md), [правила агенту](AGENTS.md) и [готовые задания](codex-prompts/README.md).
 
 ## Состав
@@ -25,6 +25,7 @@ DataFlow — платформа, в которой пользователь ви
 | [INFRASTRUCTURE_PLAN](docs/INFRASTRUCTURE_PLAN.md) | Структура репозитория и локальная среда |
 | [QUALITY_AND_SECURITY](docs/QUALITY_AND_SECURITY.md) | Проверки и минимальные защитные меры |
 | [DECISIONS_AND_QUESTIONS](docs/DECISIONS_AND_QUESTIONS.md) | Принятые направления и новые предложения |
+| [PROTOTYPE_PLAN](docs/PROTOTYPE_PLAN.md) | Граница и пошаговая приёмка сдаваемого курсового прототипа |
 | [ADR-шаблон](docs/decisions/000-template.md) | Запись будущих архитектурных решений |
 
 ## Как перенести в будущий репозиторий
