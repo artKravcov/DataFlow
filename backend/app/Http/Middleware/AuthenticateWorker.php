@@ -20,6 +20,9 @@ class AuthenticateWorker
             return response()->json(['error' => ['code' => 'PAYLOAD_TOO_LARGE', 'message' => 'Request too large']], 413)->header('Cache-Control', 'no-store');
         }
 
-        return $next($request)->header('Cache-Control', 'no-store');
+        $response = $next($request);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 }
