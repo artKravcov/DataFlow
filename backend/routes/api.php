@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AssetController;
+use App\Http\Controllers\Api\V1\ExecutionController;
 use App\Http\Controllers\Api\V1\PipelineController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\ReadinessController;
@@ -30,4 +31,6 @@ Route::group(['prefix' => '/v1'], function () {
     Route::put('/organizations/{organization}/pipelines/{pipeline}/graph', [PipelineController::class, 'saveGraph'])->middleware('auth:sanctum');
     Route::post('/organizations/{organization}/pipelines/{pipeline}/validate', [PipelineController::class, 'validateGraph'])->middleware('auth:sanctum');
     Route::post('/organizations/{organization}/pipelines/{pipeline}/archive', [PipelineController::class, 'archive'])->middleware('auth:sanctum');
+    Route::post('/organizations/{organization}/pipelines/{pipeline}/executions', [ExecutionController::class, 'store'])->middleware('auth:sanctum');
+    Route::get('/organizations/{organization}/executions/{execution}', [ExecutionController::class, 'show'])->middleware('auth:sanctum');
 });

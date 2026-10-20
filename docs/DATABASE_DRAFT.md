@@ -26,6 +26,10 @@
 
 Dataset records не хранятся в таблицах приложения как промежуточное состояние MVP. Worker держит batch в памяти в рамках лимитов; результаты, которые нужны пользователю, сохраняются как `file_assets` или записываются destination connector. Если позже появятся chunking/streaming, потребуется отдельный storage contract/ADR.
 
+## Реализованная часть запуска
+
+Execution, ExecutionNode, ExecutionLog и OutboxMessage созданы с числовыми ID запуска и узлов; ID сообщения outbox — UUID. Snapshot и revision хранятся в Execution, конфигурация допускает только поля, прошедшие GraphInput. Составной FK связывает запуск с pipeline той же организации, unique `(organization_id, idempotency_key)` ограничивает повтор ключа, частичный unique index не допускает два queued/running запуска одного pipeline. Создание намеренно сериализуется блокировкой организации, затем проекта и pipeline. Таблица execution_events и поля lease появятся вместе с внутренним протоколом.
+
 ## Целостность графа и конкуренция
 
 Граф сохраняется целиком в одной транзакции. Клиент передаёт ожидаемую revision; если она не совпала, 409. Сервер сначала валидирует весь граф и tenant references, затем заменяет nodes/edges и увеличивает revision. Для нескольких рёбер в один input MVP действует unique(pipeline_id,target_node_id,target_port).

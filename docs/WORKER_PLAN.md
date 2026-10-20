@@ -7,10 +7,10 @@
 Redis Stream `dataflow:executions:v1`, consumer group `workers-v1`. Outbox dispatcher Laravel публикует JSON envelope:
 
 ```json
-{"message_version":1,"message_id":"<outbox-uuid>","execution_id":"<execution-uuid>"}
+{"message_version":1,"message_id":"<outbox-uuid>","execution_id":"<числовой-id-строкой>"}
 ```
 
-Никаких credentials, записей пользователя и полного графа в Redis. Получив сообщение, worker обращается к internal claim API. Laravel атомарно назначает owner запуска и lease. Только подтверждённый claim разрешает исполнение. Сторонние Laravel queues, если появятся для почты, используют отдельные ключи и не читаются этим worker.
+Реализованный outbox уже содержит этот минимальный envelope с UUID сообщения и числовым ID запуска, представленным строкой. Публикация в Redis ещё не реализована. Никаких credentials, записей пользователя и полного графа в Redis. Получив сообщение, worker обращается к internal claim API. Laravel атомарно назначает owner запуска и lease. Только подтверждённый claim разрешает исполнение. Сторонние Laravel queues, если появятся для почты, используют отдельные ключи и не читаются этим worker.
 
 ## Публикация и восстановление
 

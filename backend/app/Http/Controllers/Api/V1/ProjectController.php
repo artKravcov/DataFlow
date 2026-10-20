@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Organization;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
+use App\Models\Execution;
+use App\Models\Organization;
 use App\Models\Project;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class ProjectController extends Controller
 {
@@ -97,7 +99,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function archive(Organization $organization, Project $project): JsonResponse
+    public function archive(Request $request, Organization $organization, Project $project): JsonResponse
     {
         Gate::authorize('view', $organization);
 
@@ -105,18 +107,24 @@ class ProjectController extends Controller
 
         Gate::authorize('archive', $project);
 
-        $project->archived_at = now();
-        $project->save();
+        return DB::transaction(function () use ($project, $request) {
+            $project = Project::whereKey($project->id)->lockForUpdate()->firstOrFail();
+            if (Execution::whereIn('pipeline_id', $project->pipelines()->select('id'))->whereIn('status', ['queued', 'running'])->exists()) {
+                return response()->json(['error' => ['code' => 'EXECUTION_ACTIVE', 'message' => 'Project has an active execution', 'fields' => (object) [], 'request_id' => $request->attributes->get('request_id')]], 409);
+            }
+            $project->archived_at = now();
+            $project->save();
 
-        return response()->json([
-            'data' => [
-                'id' => $project->id,
-                'name' => $project->name,
-                'description' => $project->description,
-                'created_at' => $project->created_at,
-                'updated_at' => $project->updated_at,
-                'archived_at' => $project->archived_at,
-            ],
-        ]);
+            return response()->json([
+                'data' => [
+                    'id' => $project->id,
+                    'name' => $project->name,
+                    'description' => $project->description,
+                    'created_at' => $project->created_at,
+                    'updated_at' => $project->updated_at,
+                    'archived_at' => $project->archived_at,
+                ],
+            ]);
+        });
     }
 }

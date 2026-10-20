@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Graph\GraphInput;
 use App\Graph\NodeRegistry;
+use App\Graph\PipelineGraph;
 use App\Http\Controllers\Controller;
+use App\Models\Execution;
 use App\Models\Organization;
 use App\Models\Pipeline;
 use App\Models\Project;
@@ -121,23 +123,27 @@ class PipelineController extends Controller
             if ($locked->revision !== (int) $input['revision']) {
                 return $this->conflict($request);
             }
-            $result = $validator->validate($this->graph($locked), $organization->id, true);
+            $result = $validator->validate(app(PipelineGraph::class)->graph($locked), $organization->id, true);
 
             return response()->json(['data' => ['revision' => $locked->revision, 'valid' => true, 'warnings' => $result['warnings']]]);
         });
     }
 
-    public function archive(Organization $organization, Pipeline $pipeline): JsonResponse
+    public function archive(Request $request, Organization $organization, Pipeline $pipeline): JsonResponse
     {
         $pipeline = $this->pipeline($organization, $pipeline);
         Gate::authorize('update', $pipeline);
-        DB::transaction(function () use ($pipeline) {
+
+        return DB::transaction(function () use ($pipeline, $request) {
             $locked = Pipeline::query()->whereKey($pipeline->id)->lockForUpdate()->firstOrFail();
+            if (Execution::where('pipeline_id', $locked->id)->whereIn('status', ['queued', 'running'])->exists()) {
+                return response()->json(['error' => ['code' => 'EXECUTION_ACTIVE', 'message' => 'Pipeline has an active execution', 'fields' => (object) [], 'request_id' => $request->attributes->get('request_id')]], 409);
+            }
             $locked->archived_at = now();
             $locked->save();
-        });
 
-        return response()->json(['data' => ['id' => $pipeline->id, 'archived' => true]]);
+            return response()->json(['data' => ['id' => $pipeline->id, 'archived' => true]]);
+        });
     }
 
     private function conflict(Request $request): JsonResponse
@@ -145,26 +151,11 @@ class PipelineController extends Controller
         return response()->json(['error' => ['code' => 'REVISION_CONFLICT', 'message' => 'Pipeline revision has changed', 'fields' => (object) [], 'request_id' => $request->attributes->get('request_id')]], 409);
     }
 
-    private function graph(Pipeline $pipeline): array
-    {
-        $nodes = $pipeline->nodes()->orderBy('id')->get()->map(function ($node) {
-            $result = ['id' => $node->node_id, 'type' => $node->type, 'type_version' => $node->type_version, 'position' => $node->position, 'config' => $node->config];
-            if ($node->schema_hints !== null) {
-                $result['schema_hints'] = $node->schema_hints;
-            }
-
-            return $result;
-        })->all();
-        $edges = $pipeline->edges()->orderBy('id')->get()->map(fn ($edge) => ['id' => $edge->edge_id, 'source' => $edge->source_node_id, 'source_port' => $edge->source_port, 'target' => $edge->target_node_id, 'target_port' => $edge->target_port])->all();
-
-        return ['schema_version' => $pipeline->schema_version, 'nodes' => $nodes, 'edges' => $edges];
-    }
-
     private function present(Pipeline $pipeline, bool $withGraph = true): array
     {
         $data = ['id' => $pipeline->id, 'organization_id' => $pipeline->organization_id, 'project_id' => $pipeline->project_id, 'name' => $pipeline->name, 'revision' => $pipeline->revision, 'created_at' => $pipeline->created_at, 'updated_at' => $pipeline->updated_at];
         if ($withGraph) {
-            $data['graph'] = $this->graph($pipeline);
+            $data['graph'] = app(PipelineGraph::class)->graph($pipeline);
             foreach ($data['graph']['nodes'] as &$node) {
                 $node['config'] = (object) $node['config'];
             }
