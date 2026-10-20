@@ -5,7 +5,11 @@
   "type": "array",
   "items": {
     "type": "object",
-    "required": ["name", "type", "nullable"],
+    "required": [
+      "name",
+      "type",
+      "nullable"
+    ],
     "properties": {
       "name": {
         "type": "string",
@@ -30,9 +34,17 @@
         "type": "boolean"
       },
       "metadata": {
-        "type": "object"
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 128
+          }
+        }
       }
     },
     "additionalProperties": false
-  }
+  },
+  "maxItems": 256
 }

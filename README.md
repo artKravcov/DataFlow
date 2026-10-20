@@ -128,3 +128,15 @@ docker compose exec backend php artisan test
 - **postgres**: долговечное состояние приложения.
 - **redis**: будущий транспорт задач и runtime cache/session store; не источник истины.
 - **gateway**: единый HTTP origin, который направляет `/api/` в backend, а остальные запросы во frontend.
+
+## Pipeline graph API (T05)
+
+После обновления кода пересоберите backend и примените миграции:
+
+```powershell
+docker compose up --build -d backend
+docker compose exec backend php artisan migrate --force
+docker compose exec backend php artisan test
+```
+
+Доступны каталог `GET /api/v1/node-types` и операции pipeline/graph после входа. Формат запросов и ограничения описаны в [API_DRAFT](docs/API_DRAFT.md). Для повторяемой проверки graph API тесты используют отдельную тестовую PostgreSQL базу и тестовый resolver assets. Загрузка файлов и выполнение графов ещё не реализованы.

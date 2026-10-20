@@ -35,7 +35,7 @@ Laravel — единственный писатель в БД приложени
 
 Завершён T04 frontend foundation: Vue Router и Pinia обеспечивают session/CSRF browser auth, получение `/me`, выбор доступной организации, защищённые маршруты и очистку project state при смене organization. Реализованы login/register, список, создание, загрузка и редактирование проектов через существующий API; viewer получает понятное состояние «только просмотр». Dashboard честно сообщает об отсутствии Execution API. В браузер не попадают secrets; API-клиент перед mutating requests получает Sanctum CSRF cookie и передаёт только decoded XSRF token. Frontend использует закреплённый Prettier с tab indentation; доступны `npm run format` и `npm run format:check`. Локальный idempotent demo seed создаёт указанного в `.env` пользователя как owner всех существующих организаций и owner/editor/viewer в учебной организации; пароль нужен только в локальном `.env`.
 
-Фактически проверены: `npm run format:check`, `npm run type-check`, `npm run build`, `docker compose up --build -d backend`, проверка CSRF-cookie (`204`), guest `/me` (`401`), `docker compose exec gateway nginx -t` и `docker compose exec backend php artisan test` — 13 passed, 48 assertions. Интерактивная browser-проверка недоступна из-за сбоя sandbox browser helper; её нужно выполнить локально. Ограничения этапа: нет invitations/member management, connections, assets, Dataset/DataSchema, pipelines, graph validation, executions, Redis Streams и runtime worker. Следующий этап: 004 — pipeline domain с Dataset/DataSchema contracts, schema-aware node registry и graph API; перед ним необходимо читать [NODE_CONTRACT](docs/NODE_CONTRACT.md).
+Фактически проверены: `npm run format:check`, `npm run type-check`, `npm run build`, `docker compose up --build -d backend`, проверка CSRF-cookie (`204`), guest `/me` (`401`), `docker compose exec gateway nginx -t` и `docker compose exec backend php artisan test` — 13 passed, 48 assertions. Интерактивная browser-проверка недоступна из-за сбоя sandbox browser helper; её нужно выполнить локально. Ограничения этапа: нет invitations/member management, connections, assets, Dataset/DataSchema, pipelines, graph validation, executions, Redis Streams и runtime worker. Следующий этап: UI builder T06, затем assets и runtime.
 
 ## Что читать для задачи
 
@@ -48,3 +48,11 @@ Laravel — единственный писатель в БД приложени
 - Допущения: [DECISIONS_AND_QUESTIONS](docs/DECISIONS_AND_QUESTIONS.md).
 
 После реализации этапа обновить этот раздел: что работает, какие проверки пройдены, что осталось и какая задача следующая. Не переписывать продуктовую цель под случайно выбранную реализацию.
+
+## T05 — pipeline и graph API
+
+Реализованы модели Pipeline/Node/Edge с PostgreSQL ограничениями принадлежности проекту и организации, каталог четырёх типов и API создания, чтения, переименования, архивирования, сохранения и проверки графа. Запись заменяет граф атомарно и проверяет revision. Сервер проверяет форму, allowlist конфигурации, типы и версии узлов, порты, циклы, дубликаты и известные поля schema. Неполный draft разрешён; validate проверяет полноту и сообщает об неизвестной schema. Договоры Dataset/DataSchema/graph и примеры лежат в `contracts/`. См. [API_DRAFT](docs/API_DRAFT.md).
+
+Хранилища файлов и runtime ещё нет: resolver по умолчанию отвергает любой asset ID, чтобы не принимать чужой или несуществующий файл. Тесты используют явную подмену resolver. Каталог не обещает работающие обработчики; executions API отсутствует. После подключения assets понадобится повторная проверка их принадлежности и готовности при запуске.
+
+Фактически проверены форматирование изменённых PHP-файлов и полный набор backend-тестов на отдельной PostgreSQL базе: 23 теста, 104 assertions. Среди них tenant isolation, роль viewer, revision conflict, rollback при ошибке вставки, некорректные графы и schema propagation. Следующий этап — T06 UI builder, затем assets/runtime; интерфейс запуска пока недоступен.

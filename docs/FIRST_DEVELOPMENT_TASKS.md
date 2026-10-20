@@ -8,7 +8,7 @@
 | T02 | Auth и personal organization | Готово | T01 | Register/login/logout; membership создаётся атомарно |
 | T03 | Projects CRUD + policies | Готово | T02 | Две организации изолированы; архивирование |
 | T04 | Frontend auth/projects | Готово | T03 | Пользователь создаёт проект через браузер |
-| T05 | Pipeline models + registry + graph API + Dataset/Schema contract | Следующая | T03 | Revision, cycle validation, неизвестные типы отвергаются; fixtures описывают Dataset v1 |
+| T05 | Pipeline models + registry + graph API + Dataset/Schema contract | Выполнена (assets/runtime — далее) | T03 | Revision, cycle validation, неизвестные типы отвергаются; fixtures описывают Dataset v1 |
 | T06 | Визуальный schema-aware редактор | Не начато | T04,T05 | Собрать и сохранить CSV граф без JSON/code input; Filter/Map используют поля schema, если она известна |
 | T07 | FileAsset upload/download | Не начато | T03 | CSV загружается с лимитом, чужой файл недоступен |
 | T08 | Execution snapshot + outbox + internal API | Не начато | T05,T07 | Атомарное создание, idempotency, claim/events/lease tests |
