@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dataflow.local/contracts/internal-execution-v1.schema.json",
+  "$defs": {
+    "workerId": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._-]+$"},
+    "leaseToken": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "claimRequest": {"type": "object", "additionalProperties": false, "required": ["worker_id"], "properties": {"worker_id": {"$ref": "#/$defs/workerId"}}},
+    "heartbeatRequest": {"type": "object", "additionalProperties": false, "required": ["worker_id", "lease_token"], "properties": {"worker_id": {"$ref": "#/$defs/workerId"}, "lease_token": {"$ref": "#/$defs/leaseToken"}}},
+    "claimResponse": {"type": "object", "additionalProperties": false, "required": ["data"], "properties": {"data": {"type": "object", "additionalProperties": false, "required": ["execution_id", "snapshot", "lease_token", "lease_seconds"], "properties": {"execution_id": {"type": "string", "pattern": "^[1-9][0-9]{0,17}$"}, "snapshot": {"type": "object", "required": ["revision", "graph"], "properties": {"revision": {"type": "integer", "minimum": 0}, "graph": {"$ref": "pipeline-graph-v1.schema.json"}}, "additionalProperties": false}, "lease_token": {"$ref": "#/$defs/leaseToken"}, "lease_seconds": {"const": 60}}}}},
+    "heartbeatResponse": {"type": "object", "additionalProperties": false, "required": ["data"], "properties": {"data": {"type": "object", "additionalProperties": false, "required": ["lease_seconds"], "properties": {"lease_seconds": {"const": 60}}}}}
+  }
+}

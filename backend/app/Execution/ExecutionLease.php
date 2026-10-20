@@ -6,21 +6,24 @@ use App\Models\Execution;
 use App\Models\ExecutionNode;
 use Illuminate\Support\Facades\DB;
 
-/** Internal state transitions only; not a worker API. */
+/** Serializes execution lease state transitions. */
 class ExecutionLease
 {
     private const SECONDS = 60;
 
-    public function claim(int $executionId, string $workerId): ?string
+    public function claim(int $executionId, string $workerId, ?callable $validate = null): ?string
     {
         if ($workerId === '' || strlen($workerId) > 128) {
             throw new \InvalidArgumentException('Invalid worker ID');
         }
 
-        return DB::transaction(function () use ($executionId, $workerId) {
+        return DB::transaction(function () use ($executionId, $workerId, $validate) {
             $execution = Execution::whereKey($executionId)->lockForUpdate()->first();
             if (! $execution || $execution->status !== 'queued') {
                 return null;
+            }
+            if ($validate) {
+                $validate($execution);
             }
             $token = bin2hex(random_bytes(32));
             $execution->update([

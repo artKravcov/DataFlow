@@ -94,3 +94,7 @@ Laravel — единственный писатель в БД приложени
 Фактически полный backend-набор прошёл на dataflow_test: 39 тестов, 205 assertions, включая Redis integration в отдельном потоке и повтор после потери подтверждения; отдельно проверен PHP → Redis → Node контракт. Одновременный запуск нескольких dispatcher ещё не проверен. Claim/lease/events, reconciler, watchdog и CSV runtime остаются следующими шагами.
 
 Для следующего этапа добавлена внутренняя основа lease запуска и миграция; она пока не подключена к worker или HTTP API. Отправка outbox и обработка истёкших запусков автоматически не запускаются. Подробности и оставшиеся требования — в `docs/WORKER_PLAN.md`.
+
+## Internal claim и heartbeat
+
+Backend предоставляет защищённые сервисным токеном `/internal/v1/executions/{id}/claim` и `/heartbeat`. Claim повторно проверяет снимок и ready asset своей организации; повтор после потери ответа не выдаёт новый lease. Контракт форматов и примеры находятся в `contracts/`. Тесты: 45 passed, 252 assertions на отдельной PostgreSQL и Redis. Watchdog, события, reconciler и worker runtime пока не подключены; конкурентные вызовы не проверены.

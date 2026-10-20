@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/api/health',
+        then: function (): void {
+            require base_path('routes/internal.php');
+        },
     )
 
     ->withMiddleware(function (Middleware $middleware): void {

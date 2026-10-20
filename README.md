@@ -181,3 +181,5 @@ docker compose run --rm --no-deps -e REDIS_HOST=redis worker npm run test:redis 
 ```powershell
 docker compose exec -T -e DATAFLOW_REDIS_INTEGRATION=1 backend php artisan test --filter=OutboxDispatcherTest
 ```
+
+Внутренние claim и heartbeat доступны backend внутри сети Docker и требуют `INTERNAL_SERVICE_TOKEN` длиной не менее 32 байтов в локальном `.env`. Примерное значение не работает; используйте случайный токен и не передавайте его в браузер. После обновления примените миграции командой `docker compose exec backend php artisan migrate --force`. Worker и автоматическая доставка ещё не подключены.

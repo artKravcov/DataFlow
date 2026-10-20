@@ -84,7 +84,7 @@ PATCH connection не возвращает credentials: ответ содерж�
 
 `POST /organizations/{org}/pipelines/{pipeline}/executions` доступен owner/editor. Он требует UUID в `Idempotency-Key` и `{ "revision": 3 }`, повторно проверяет полный граф и готовность входного файла, затем атомарно создаёт queued Execution со снимком `{revision, graph}`, pending статусы узлов и запись outbox. Снимок не меняется при последующем редактировании графа. Один и тот же ключ в организации с теми же pipeline и revision возвращает тот же ID и текущий статус даже после завершения; иной запрос с тем же ключом даёт `409 IDEMPOTENCY_CONFLICT`. Для нового ключа устаревшая revision даёт `409 REVISION_CONFLICT`, а уже активный запуск — `409 EXECUTION_ACTIVE`. Проект или pipeline с активным запуском архивировать нельзя.
 
-`GET /organizations/{org}/executions/{id}` доступен участникам организации и возвращает снимок, revision и статусы узлов; чужой ID даёт 404. На текущем этапе outbox ещё не публикуется, worker не исполняет задания, а кнопка запуска отключена: прямой запрос останется в состоянии queued до реализации доставки. Очередь, тайм-ауты, claim и завершение запуска пока отсутствуют.
+`GET /organizations/{org}/executions/{id}` доступен участникам организации и возвращает снимок, revision и статусы узлов; чужой ID даёт 404. На текущем этапе outbox ещё не публикуется, worker не исполняет задания, а кнопка запуска отключена: прямой запрос останется в состоянии queued до реализации доставки. Автоматическая доставка, обработка тайм-аутов и завершение запуска пока не подключены.
 
 ## Входные CSV-файлы (T07)
 
@@ -92,11 +92,11 @@ PATCH connection не возвращает credentials: ответ содерж�
 
 ## Internal API
 
-Префикс `/internal/v1`, доступен только worker-сервисам. Все payload ограничены по размеру. Service token идентифицирует доверенный worker; lease token ограничивает конкретный запуск. Ни один из этих токенов не выдаётся браузеру.
+Префикс `/internal/v1` обслуживается напрямую backend внутри сети Docker; gateway его не проксирует. Реализованы claim и heartbeat; остальные методы ниже остаются предложением. Для этих двух методов тела JSON ограничены 2048 байтами. Заголовок `Authorization: Bearer <INTERNAL_SERVICE_TOKEN>` обязателен; пустой, короткий (менее 32 байтов) и примерный токен не принимается. Lease token ограничивает конкретный запуск. Токены не выдаются браузеру; ответы имеют `Cache-Control: no-store`.
 
 | Метод и путь | Контракт |
 |---|---|
-| POST /executions/{id}/claim | body worker_id; атомарно queued → running; snapshot + lease token + credentials необходимых connections |
+| POST /executions/{id}/claim | body worker_id; атомарно queued → running; snapshot + lease token (connections в этом срезе отсутствуют) |
 | POST /executions/{id}/heartbeat | worker_id + lease token; продлить только действующий lease |
 | POST /executions/{id}/events | Упорядоченные event_id/sequence; node transitions и финальный execution event |
 | GET /executions/{id}/assets/{asset}/content | Только входные assets snapshot и действующий lease |
@@ -106,4 +106,6 @@ Claim проверяет connection revision и ready inputs до старта. 
 
 Повтор events с тем же event_id и тем же payload подтверждается без повторной записи; другой payload под тем же ID — 409. Sequence монотонна, события старого lease отвергаются. После terminal состояния разрешено только подтверждение уже принятого идентичного события.
 
-Подробные правила восстановления: [WORKER_PLAN](WORKER_PLAN.md). Перед реализацией перенести этот draft в OpenAPI/JSON Schema и контрактные fixtures; сейчас это описание, а не готовая спецификация OpenAPI.
+Подробные правила восстановления: [WORKER_PLAN](WORKER_PLAN.md). Формат реализованных claim/heartbeat описан в [JSON Schema](../contracts/internal-execution-v1.schema.json) и [примерах](../contracts/fixtures/internal-execution-v1.json); остальные методы остаются черновиком.
+
+Реализованные методы отвечают 401 без сервисного токена, 422 при некорректном JSON, 413 при теле более 2048 байтов и 409 при недоступном запуске или lease. При ошибке повторной проверки snapshot возвращается `SNAPSHOT_UNAVAILABLE` без раскрытия графа. Повтор claim после потерянного ответа не выдаёт токен; пока watchdog не подключён к расписанию, такой запуск останется running.
