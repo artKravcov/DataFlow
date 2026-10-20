@@ -7,6 +7,7 @@ import OrganizationSelectView from '@/views/OrganizationSelectView.vue'
 import OverviewView from '@/views/OverviewView.vue'
 import ProjectsView from '@/views/ProjectsView.vue'
 import ProjectView from '@/views/ProjectView.vue'
+import PipelineView from '@/views/PipelineView.vue'
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
@@ -37,6 +38,7 @@ const router = createRouter({
 				{ path: 'overview', name: 'overview', component: OverviewView },
 				{ path: 'projects', name: 'projects', component: ProjectsView },
 				{ path: 'projects/:project', name: 'project', component: ProjectView },
+				{ path: 'pipelines/:pipeline', name: 'pipeline', component: PipelineView },
 			],
 		},
 		{ path: '/', redirect: '/organizations' },

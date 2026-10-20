@@ -9,8 +9,14 @@ const auth = useAuthStore()
 const organization = computed(() => auth.organizationById(Number(route.params.org)))
 
 async function logout(): Promise<void> {
-	await auth.logout()
-	await router.push({ name: 'login' })
+	const event = new Event('dataflow-before-logout', { cancelable: true })
+	if (!window.dispatchEvent(event)) return
+	try {
+		await auth.logout()
+		await router.push({ name: 'login' })
+	} finally {
+		window.dispatchEvent(new Event('dataflow-logout-finished'))
+	}
 }
 </script>
 

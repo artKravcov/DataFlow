@@ -5,6 +5,52 @@ import ProjectForm from '@/components/ProjectForm.vue'
 import { ApiError, type FieldErrors, request } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 import type { Project, ProjectInput } from '@/lib/types'
+import type { Pipeline } from '@/lib/graph'
+import { ensureCsrf } from '@/lib/api'
+const pipelines = ref<Pipeline[]>([])
+const pipelineName = ref('')
+const pipelineError = ref('')
+const pipelineLoading = ref(false)
+const pipelineCreating = ref(false)
+let pipelineLoadSequence = 0
+async function loadPipelines(): Promise<void> {
+	const sequence = ++pipelineLoadSequence
+	const path = `/organizations/${organizationId.value}/projects/${projectId.value}/pipelines`
+	pipelineLoading.value = true
+	pipelineError.value = ''
+	pipelines.value = []
+	try {
+		const items: Pipeline[] = []
+		let page = 1
+		let batch: Pipeline[]
+		do {
+			batch = await request<Pipeline[]>(`${path}?page=${page++}`)
+			items.push(...batch)
+		} while (batch.length === 25)
+		if (sequence === pipelineLoadSequence) pipelines.value = items
+	} catch {
+		if (sequence === pipelineLoadSequence) pipelineError.value = 'Не удалось загрузить потоки.'
+	} finally {
+		if (sequence === pipelineLoadSequence) pipelineLoading.value = false
+	}
+}
+async function createPipeline(): Promise<void> {
+	if (!pipelineName.value.trim() || pipelineCreating.value) return
+	pipelineCreating.value = true
+	try {
+		await ensureCsrf()
+		const p = await request<Pipeline>(
+			`/organizations/${organizationId.value}/projects/${projectId.value}/pipelines`,
+			{ method: 'POST', body: JSON.stringify({ name: pipelineName.value.trim() }) },
+		)
+		pipelines.value.unshift(p)
+		pipelineName.value = ''
+	} catch {
+		pipelineError.value = 'Не удалось создать поток.'
+	} finally {
+		pipelineCreating.value = false
+	}
+}
 const route = useRoute()
 const auth = useAuthStore()
 const project = ref<Project | null>(null)
@@ -55,8 +101,14 @@ async function save(input: ProjectInput): Promise<void> {
 		saving.value = false
 	}
 }
-onMounted(load)
-watch([organizationId, projectId], load)
+onMounted(() => {
+	load()
+	loadPipelines()
+})
+watch([organizationId, projectId], () => {
+	load()
+	loadPipelines()
+})
 </script>
 <template>
 	<section class="page">
@@ -71,8 +123,31 @@ watch([organizationId, projectId], load)
 		<section v-else-if="project" class="stack">
 			<div>
 				<h1>{{ project.name }}</h1>
-				<p class="muted">Pipeline и executions будут добавлены в последующих этапах.</p>
+				<p class="muted">Потоки проекта и их настройки.</p>
 			</div>
+			<section class="card stack">
+				<h2>Потоки</h2>
+				<form v-if="canEdit" class="row" @submit.prevent="createPipeline">
+					<label
+						>Название потока <input v-model="pipelineName" maxlength="255" required
+					/></label>
+					<button type="submit" :disabled="pipelineCreating">Создать поток</button>
+				</form>
+				<p v-if="pipelineLoading">Загрузка потоков…</p>
+				<p v-else-if="pipelineError" class="error">
+					{{ pipelineError }} <button @click="loadPipelines">Повторить</button>
+				</p>
+				<p v-else-if="!pipelines.length" class="muted">Пока нет потоков.</p>
+				<RouterLink
+					v-for="pipeline in pipelines"
+					:key="pipeline.id"
+					:to="{
+						name: 'pipeline',
+						params: { org: organizationId, pipeline: pipeline.id },
+					}"
+					>{{ pipeline.name }}</RouterLink
+				>
+			</section>
 			<section v-if="canEdit" class="card">
 				<h2>Настройки проекта</h2>
 				<ProjectForm
