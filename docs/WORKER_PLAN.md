@@ -63,4 +63,4 @@ Internal API подключён только к backend в сети Docker. Work
 
 Internal events реализованы частично: node.started/succeeded/failed и execution.failed, с проверкой порядка, lease и идемпотентным подтверждением. Успех destination и запуска закрыт до реализации и проверки output asset; автоматические dispatcher, watchdog и reconciler по-прежнему отключены.
 
-Worker может получить входной CSV только через internal API и действующий lease. Передача результата пока не реализована.
+Worker может получить входной CSV только через internal API и действующий lease. Передача CSV результата реализована: ограниченный поток с проверкой checksum и идемпотентностью по запуску и узлу. Публикация успеха остаётся отдельным этапом.

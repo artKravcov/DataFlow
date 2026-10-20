@@ -16,7 +16,8 @@ class AuthenticateWorker
             ! is_string($provided) || ! hash_equals($expected, $provided)) {
             return response()->json(['error' => ['code' => 'UNAUTHENTICATED', 'message' => 'Worker authentication required']], 401)->header('Cache-Control', 'no-store');
         }
-        if (strlen($request->getContent()) > 2048) {
+        $artifactUpload = $request->isMethod('POST') && $request->is('internal/v1/executions/*/artifacts');
+        if (! $artifactUpload && strlen($request->getContent()) > 2048) {
             return response()->json(['error' => ['code' => 'PAYLOAD_TOO_LARGE', 'message' => 'Request too large']], 413)->header('Cache-Control', 'no-store');
         }
 

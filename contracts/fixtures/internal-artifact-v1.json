@@ -1,0 +1,14 @@
+{
+  "headers": {
+    "worker_id": "worker-1",
+    "lease_token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "node_id": "destination",
+    "content_sha256": "7cde7fb64fd82bd152710cf238e017b9ab46c0592483edc067ba4f6c75fac108"
+  },
+  "response": {
+    "data": {
+      "asset_id": "1"
+    }
+  },
+  "csv_body": "id\n1\n"
+}

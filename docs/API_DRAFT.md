@@ -92,7 +92,7 @@ PATCH connection не возвращает credentials: ответ содерж�
 
 ## Internal API
 
-Префикс `/internal/v1` обслуживается напрямую backend внутри сети Docker; gateway его не проксирует. Реализованы claim, heartbeat, события и выдача входного файла; загрузка результата остаётся предложением. Тела JSON ограничены 2048 байтами. Заголовок `Authorization: Bearer <INTERNAL_SERVICE_TOKEN>` обязателен; пустой, короткий (менее 32 байтов) и примерный токен не принимается. Lease token ограничивает конкретный запуск. Токены не выдаются браузеру; ответы имеют `Cache-Control: no-store`.
+Префикс `/internal/v1` обслуживается напрямую backend внутри сети Docker; gateway его не проксирует. Реализованы claim, heartbeat, события и выдача входного файла; загрузка результата реализована в ограниченном виде. Тела JSON ограничены 2048 байтами. Заголовок `Authorization: Bearer <INTERNAL_SERVICE_TOKEN>` обязателен; пустой, короткий (менее 32 байтов) и примерный токен не принимается. Lease token ограничивает конкретный запуск. Токены не выдаются браузеру; ответы имеют `Cache-Control: no-store`.
 
 | Метод и путь | Контракт |
 |---|---|
@@ -100,7 +100,7 @@ PATCH connection не возвращает credentials: ответ содерж�
 | POST /executions/{id}/heartbeat | worker_id + lease token; продлить только действующий lease |
 | POST /executions/{id}/events | Реализованы node.started, node.succeeded, node.failed и execution.failed; завершение успехом ожидает сохранения output asset |
 | GET /executions/{id}/assets/{asset}/content | Реализовано: только ready CSV из snapshot и той же организации при действующем lease |
-| POST /executions/{id}/artifacts | Потоковая загрузка результата, назначение organization на сервере |
+| POST /executions/{id}/artifacts | Реализована потоковая загрузка CSV с checksum и привязкой к destination snapshot |
 
 Claim проверяет connection revision и ready inputs до старта. Конфликт terminal/уже занятого запуска не выдаёт secrets. Повтор claim после потерянного ответа не создаёт новый lease: worker без подтверждённого токена не исполняет работу, watchdog завершит её как failed.
 
@@ -113,3 +113,7 @@ Claim проверяет connection revision и ready inputs до старта. 
 События передаются по одному, с `worker_id`, `lease_token`, UUID `event_id`, целочисленным `sequence` от 1 до 101 и типом. Для node-события обязателен `node_id`, для failed — ограниченный набор `error_code`. Событие применяется вместе с сохранением идентификатора в одной транзакции. Новое событие требует активный lease и следующий sequence; идентичный повтор возвращает прежний sequence. После `execution.failed` допускается только подтверждение его идентичного повтора с тем же worker и токеном, даже если время lease истекло; новые события отклоняются. После watchdog подтверждение недоступно. `node.started` требует завершения всех предшественников, одновременные узлы не допускаются. До реализации загрузки результата `csv.destination` нельзя отметить успешным, а `execution.succeeded` не принимается. [Схема и пример](../contracts/internal-event-v1.schema.json).
 
 Для чтения входного файла worker отправляет `GET /internal/v1/executions/{id}/assets/{asset}/content` с сервисным Bearer-токеном и заголовками `X-Worker-Id` и `X-Lease-Token`. Сервер сверяет действующий lease, ID файла в CSV source snapshot, организацию, готовность и ограничение размера; файл отдаётся потоком с `no-store`. При недоступном файле возвращается 404, при недействительном lease — 409. Проверка размера не является проверкой содержимого файла.
+
+Загрузка результата: `POST /internal/v1/executions/{id}/artifacts`, `Content-Type: text/csv`, заголовки `X-Worker-Id`, `X-Lease-Token`, `X-Node-Id`, `X-Content-Sha256` (64 строчных hex). Тело — непустой CSV без NUL до `MAX_INPUT_BYTES` (по умолчанию 10 МиБ); checksum вычисляется сервером и сверяется с заявленной. Сервер повторно проверяет lease после приёма, назначает организацию из запуска и имя из snapshot. Доступен только работающий CSV destination этого запуска. Полный файл и metadata становятся ready вместе; повтор той же передачи для пары execution/node возвращает прежний ID, другой контент даёт 409. При аварии процесса может остаться файл без записи в БД; автоматическая очистка пока не реализована. Отметка результата узлом и успешное завершение запуска пока не подключены.
+
+Форматы заголовков и ответа описаны в [схеме](../contracts/internal-artifact-v1.schema.json) и [примере](../contracts/fixtures/internal-artifact-v1.json); тело содержит непосредственно CSV.
