@@ -92,13 +92,13 @@ PATCH connection не возвращает credentials: ответ содерж�
 
 ## Internal API
 
-Префикс `/internal/v1` обслуживается напрямую backend внутри сети Docker; gateway его не проксирует. Реализованы claim и heartbeat; остальные методы ниже остаются предложением. Для этих двух методов тела JSON ограничены 2048 байтами. Заголовок `Authorization: Bearer <INTERNAL_SERVICE_TOKEN>` обязателен; пустой, короткий (менее 32 байтов) и примерный токен не принимается. Lease token ограничивает конкретный запуск. Токены не выдаются браузеру; ответы имеют `Cache-Control: no-store`.
+Префикс `/internal/v1` обслуживается напрямую backend внутри сети Docker; gateway его не проксирует. Реализованы claim, heartbeat и события; остальные методы ниже остаются предложением. Тела JSON ограничены 2048 байтами. Заголовок `Authorization: Bearer <INTERNAL_SERVICE_TOKEN>` обязателен; пустой, короткий (менее 32 байтов) и примерный токен не принимается. Lease token ограничивает конкретный запуск. Токены не выдаются браузеру; ответы имеют `Cache-Control: no-store`.
 
 | Метод и путь | Контракт |
 |---|---|
 | POST /executions/{id}/claim | body worker_id; атомарно queued → running; snapshot + lease token (connections в этом срезе отсутствуют) |
 | POST /executions/{id}/heartbeat | worker_id + lease token; продлить только действующий lease |
-| POST /executions/{id}/events | Упорядоченные event_id/sequence; node transitions и финальный execution event |
+| POST /executions/{id}/events | Реализованы node.started, node.succeeded, node.failed и execution.failed; завершение успехом ожидает сохранения output asset |
 | GET /executions/{id}/assets/{asset}/content | Только входные assets snapshot и действующий lease |
 | POST /executions/{id}/artifacts | Потоковая загрузка результата, назначение organization на сервере |
 
@@ -109,3 +109,5 @@ Claim проверяет connection revision и ready inputs до старта. 
 Подробные правила восстановления: [WORKER_PLAN](WORKER_PLAN.md). Формат реализованных claim/heartbeat описан в [JSON Schema](../contracts/internal-execution-v1.schema.json) и [примерах](../contracts/fixtures/internal-execution-v1.json); остальные методы остаются черновиком.
 
 Реализованные методы отвечают 401 без сервисного токена, 422 при некорректном JSON, 413 при теле более 2048 байтов и 409 при недоступном запуске или lease. При ошибке повторной проверки snapshot возвращается `SNAPSHOT_UNAVAILABLE` без раскрытия графа. Повтор claim после потерянного ответа не выдаёт токен; пока watchdog не подключён к расписанию, такой запуск останется running.
+
+События передаются по одному, с `worker_id`, `lease_token`, UUID `event_id`, целочисленным `sequence` от 1 до 101 и типом. Для node-события обязателен `node_id`, для failed — ограниченный набор `error_code`. Событие применяется вместе с сохранением идентификатора в одной транзакции. Новое событие требует активный lease и следующий sequence; идентичный повтор возвращает прежний sequence. После `execution.failed` допускается только подтверждение его идентичного повтора с тем же worker и токеном, даже если время lease истекло; новые события отклоняются. После watchdog подтверждение недоступно. `node.started` требует завершения всех предшественников, одновременные узлы не допускаются. До реализации загрузки результата `csv.destination` нельзя отметить успешным, а `execution.succeeded` не принимается. [Схема и пример](../contracts/internal-event-v1.schema.json).

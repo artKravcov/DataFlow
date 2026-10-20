@@ -1,0 +1,11 @@
+{
+  "request": {
+    "worker_id": "worker-1",
+    "lease_token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "event_id": "a3612890-193f-45f1-a263-44f7a0fc5000",
+    "sequence": 1,
+    "type": "node.started",
+    "node_id": "source"
+  },
+  "response": {"data": {"accepted_sequence": 1}}
+}

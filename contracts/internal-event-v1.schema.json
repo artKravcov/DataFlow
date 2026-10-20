@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dataflow.local/contracts/internal-event-v1.schema.json",
+  "$defs": {
+    "request": {
+      "type": "object",
+      "required": ["worker_id", "lease_token", "event_id", "sequence", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "worker_id": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._-]+$"},
+        "lease_token": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "event_id": {"type": "string", "format": "uuid"},
+        "sequence": {"type": "integer", "minimum": 1, "maximum": 101},
+        "type": {"enum": ["node.started", "node.succeeded", "node.failed", "execution.failed"]},
+        "node_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "error_code": {"enum": ["FIELD_MISSING", "TYPE_MISMATCH", "RESOURCE_LIMIT", "TIMEOUT", "INVALID_CSV", "INTERNAL_ERROR"]}
+      },
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "execution.failed"}}}, "then": {"not": {"required": ["node_id"]}}, "else": {"required": ["node_id"]}},
+        {"if": {"properties": {"type": {"enum": ["node.failed", "execution.failed"]}}}, "then": {"required": ["error_code"]}, "else": {"not": {"required": ["error_code"]}}}
+      ]
+    },
+    "response": {"type": "object", "required": ["data"], "additionalProperties": false, "properties": {"data": {"type": "object", "required": ["accepted_sequence"], "additionalProperties": false, "properties": {"accepted_sequence": {"type": "integer", "minimum": 1, "maximum": 101}}}}}
+  }
+}
