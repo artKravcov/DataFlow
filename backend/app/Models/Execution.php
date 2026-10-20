@@ -10,6 +10,6 @@ class Execution extends Model
 
     protected function casts(): array
     {
-        return ['snapshot' => 'array', 'revision' => 'integer'];
+        return ['snapshot' => 'array', 'revision' => 'integer', 'lease_expires_at' => 'datetime'];
     }
 }
