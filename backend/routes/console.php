@@ -1,6 +1,8 @@
 <?php
 
+use App\Execution\ExecutionLease;
 use App\Execution\OutboxDispatcher;
+use App\Execution\QueueReconciler;
 use App\Execution\StreamPublisher;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -40,3 +42,24 @@ Artisan::command('dataflow:dispatch-outbox {--limit=25}', function (OutboxDispat
     }
     $this->info("Published: {$counts['published']}; retry pending: {$counts['retry']}.");
 })->purpose('Publish a bounded batch of outbox messages');
+
+// Bounded, manually invoked until a long-running worker and recovery scheduler are connected.
+Artisan::command('dataflow:recover-executions {--limit=25}', function (QueueReconciler $reconciler, ExecutionLease $leases) {
+    $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 100]]);
+    if ($limit === false) {
+        throw new InvalidArgumentException('Limit must be between 1 and 100.');
+    }
+    $lost = 0;
+    for ($i = 0; $i < $limit && $leases->failOneExpired(); $i++) {
+        $lost++;
+    }
+    $counts = ['waiting' => 0, 'republish' => 0, 'timed_out' => 0];
+    for ($i = 0; $i < $limit; $i++) {
+        $result = $reconciler->reconcileOne();
+        if ($result === 'idle') {
+            break;
+        }
+        $counts[$result]++;
+    }
+    $this->info("Worker lost: $lost; waiting: {$counts['waiting']}; republish: {$counts['republish']}; queue timeout: {$counts['timed_out']}.");
+})->purpose('Recover a bounded batch of stalled executions');
