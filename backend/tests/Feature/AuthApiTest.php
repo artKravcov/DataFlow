@@ -5,17 +5,20 @@ namespace Tests\Feature;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AuthApiTest extends TestCase
 {
     use RefreshDatabase;
+
     /**
      * A basic feature test example.
      */
     public function test_registration_creates_user_personal_organization_and_owner_membership(): void
     {
+        $this->app->bind(ValidateCsrfToken::class, StrictCsrfMiddleware::class);
         $csrfToken = 'test-csrf-token';
 
         $response = $this
@@ -23,18 +26,18 @@ class AuthApiTest extends TestCase
             ->withHeader('Origin', 'http://localhost:8080')
             ->withHeader('Referer', 'http://localhost:8080/')
             ->withHeader('X-CSRF-TOKEN', $csrfToken)
-            ->postJson("/api/v1/auth/register", [
+            ->postJson('/api/v1/auth/register', [
                 'name' => 'Test',
                 'email' => 'registration@example.test',
                 'password' => '123451234512345',
-                'password_confirmation' => '123451234512345'
+                'password_confirmation' => '123451234512345',
             ]);
 
         $response->assertCreated();
         $response->assertJsonPath('data.user.email', 'registration@example.test');
 
         $this->assertDatabaseHas('users', [
-            'email' => 'registration@example.test'
+            'email' => 'registration@example.test',
         ]);
 
         $user = User::where('email', 'registration@example.test')->firstOrFail();
@@ -50,6 +53,7 @@ class AuthApiTest extends TestCase
 
     public function test_same_origin_registration_requires_a_csrf_token(): void
     {
+        $this->app->bind(ValidateCsrfToken::class, StrictCsrfMiddleware::class);
         $response = $this
             ->withHeader('Origin', 'http://localhost:8080')
             ->withHeader('Referer', 'http://localhost:8080/')
@@ -73,6 +77,7 @@ class AuthApiTest extends TestCase
             'email' => 'login@example.test',
             'password' => '123451234512345',
         ]);
+        $this->app->bind(ValidateCsrfToken::class, StrictCsrfMiddleware::class);
         $csrfToken = 'test-csrf-token';
 
         $response = $this
@@ -111,6 +116,7 @@ class AuthApiTest extends TestCase
     public function test_authenticated_user_can_log_out(): void
     {
         $user = User::factory()->create();
+        $this->app->bind(ValidateCsrfToken::class, StrictCsrfMiddleware::class);
         $csrfToken = 'test-csrf-token';
 
         $response = $this
@@ -123,5 +129,13 @@ class AuthApiTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data', null);
+    }
+}
+
+class StrictCsrfMiddleware extends ValidateCsrfToken
+{
+    protected function runningUnitTests()
+    {
+        return false;
     }
 }
