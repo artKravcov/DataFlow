@@ -161,3 +161,17 @@ npm run build
 ## Намерение запуска (этап A)
 
 Backend сохраняет запрос на запуск, неизменяемый снимок графа и сообщение outbox в одной транзакции. Повтор с тем же ключом возвращает тот же запуск. API и примеры описаны в [API_DRAFT](docs/API_DRAFT.md). Обработчик outbox и worker ещё не подключены: запросы, отправленные напрямую к API, останутся в очереди; кнопка запуска в редакторе пока отключена.
+
+## Проверка транспорта Redis (в разработке)
+
+Проверка использует отдельный временный поток и не запускает реальные работы. После пересборки контейнеров выполните в PowerShell:
+
+```powershell
+docker compose up --build -d backend redis
+docker compose build worker
+$stream = "dataflow:contract-test:$([guid]::NewGuid().ToString())"
+docker compose exec backend php artisan dataflow:publish-contract-fixture $stream
+docker compose run --rm --no-deps -e REDIS_HOST=redis worker npm run test:redis -- $stream
+```
+
+Отдельные проверки parser и сборки worker: `cd worker; npm ci; npm test`. Проверка PHP → Redis → Node выполнена; эти команды не означают готовности dispatcher, claim или runtime.

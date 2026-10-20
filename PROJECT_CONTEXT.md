@@ -78,3 +78,10 @@ Laravel — единственный писатель в БД приложени
 Созданы Execution, ExecutionNode, ExecutionLog и outbox. Owner/editor может через API создать queued запуск с UUID ключом и revision; Laravel блокирует организацию, проект и pipeline, повторно проверяет готовность графа и CSV и атомарно сохраняет снимок, pending узлы и минимальное сообщение. Повтор ключа возвращает тот же запуск, другая операция с тем же ключом — 409; уникальный индекс защищает от двух активных запусков. Архивирование проекта и pipeline с активными запусками запрещено. Viewer может читать историю конкретного запуска в своей организации.
 
 Фактически проверены 29 backend-тестов (176 assertions) на `dataflow_test`, включая tenant isolation, права, повтор ключа, неизменность снимка, rollback outbox и ограничение активного запуска в PostgreSQL. Одновременные HTTP-запросы отдельно не проверялись. Worker, dispatcher Redis, lease/events, watchdog, исполнение и UI запуска отсутствуют; прямой API-запрос остаётся queued. Следующий шаг — контракт транспорта Redis Streams и internal API согласно [WORKER_PLAN](docs/WORKER_PLAN.md).
+
+
+## Первое исполнение — транспортный контракт
+
+Подготовлены JSON Schema и фикстура минимального Redis envelope, PHP publisher с проверкой допустимых полей и Node parser. Клиент `redis` закреплён на версии 5.8.3. Добавлены локальные тесты parser и тестовый сценарий PHP → Redis Stream → Node consumer с двумя копиями сообщения и TTL отдельного тестового потока. Этот сценарий не включает реальное исполнение и не связан с outbox dispatcher.
+
+Фактически проверены PHP → настоящий Redis Stream → Node consumer (две одинаковые доставки), worker build и 2 теста, полный backend набор — 35 тестов, 182 assertions на dataflow_test. Проверка транспорта не осуществляет claim и не запускает граф. Следующий шаг — dispatcher outbox, затем claim/lease/events и worker runtime.

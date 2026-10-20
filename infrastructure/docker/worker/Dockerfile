@@ -6,6 +6,7 @@ COPY worker/package.json worker/package-lock.json ./
 RUN npm ci
 
 COPY worker/ ./
+COPY contracts/ /contracts/
 RUN npm run build
 
 CMD ["npm", "run", "start"]
