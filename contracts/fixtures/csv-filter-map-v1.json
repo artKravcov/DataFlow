@@ -1,0 +1,72 @@
+{
+  "graph": {
+    "schema_version": 1,
+    "nodes": [
+      {
+        "id": "source",
+        "type": "csv.source",
+        "type_version": 1,
+        "position": {"x": 0, "y": 0},
+        "config": {"asset_id": "asset-demo", "delimiter": ",", "header": true},
+        "schema_hints": [
+          {"name": "order_id", "type": "string", "nullable": false},
+          {"name": "status", "type": "string", "nullable": false},
+          {"name": "total", "type": "string", "nullable": false}
+        ]
+      },
+      {
+        "id": "filter",
+        "type": "transform.filter",
+        "type_version": 1,
+        "position": {"x": 240, "y": 0},
+        "config": {"field": "status", "operator": "equals", "value": "paid"}
+      },
+      {
+        "id": "map",
+        "type": "transform.map",
+        "type_version": 1,
+        "position": {"x": 480, "y": 0},
+        "config": {
+          "mappings": [
+            {"source": "order_id", "target": "id"},
+            {"source": "total", "target": "amount"}
+          ]
+        }
+      },
+      {
+        "id": "output",
+        "type": "csv.destination",
+        "type_version": 1,
+        "position": {"x": 720, "y": 0},
+        "config": {"filename": "paid-orders.csv"}
+      }
+    ],
+    "edges": [
+      {"id": "e1", "source": "source", "source_port": "records", "target": "filter", "target_port": "records"},
+      {"id": "e2", "source": "filter", "source_port": "records", "target": "map", "target_port": "records"},
+      {"id": "e3", "source": "map", "source_port": "records", "target": "output", "target_port": "records"}
+    ]
+  },
+  "input": {
+    "schema": [
+      {"name": "order_id", "type": "string", "nullable": false},
+      {"name": "status", "type": "string", "nullable": false},
+      {"name": "total", "type": "string", "nullable": false}
+    ],
+    "records": [
+      {"order_id": "101", "status": "paid", "total": "12.50"},
+      {"order_id": "102", "status": "pending", "total": "8.00"},
+      {"order_id": "103", "status": "paid", "total": "20.00"}
+    ]
+  },
+  "expected": {
+    "schema": [
+      {"name": "id", "type": "string", "nullable": false},
+      {"name": "amount", "type": "string", "nullable": false}
+    ],
+    "records": [
+      {"id": "101", "amount": "12.50"},
+      {"id": "103", "amount": "20.00"}
+    ]
+  }
+}

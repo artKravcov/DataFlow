@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dataflow.local/contracts/data-schema-v1.schema.json",
+  "title": "DataFlow DataSchema v1",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["name", "type", "nullable"],
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "string",
+          "integer",
+          "float",
+          "decimal",
+          "boolean",
+          "date",
+          "datetime",
+          "json",
+          "unknown"
+        ]
+      },
+      "nullable": {
+        "type": "boolean"
+      },
+      "metadata": {
+        "type": "object"
+      }
+    },
+    "additionalProperties": false
+  }
+}

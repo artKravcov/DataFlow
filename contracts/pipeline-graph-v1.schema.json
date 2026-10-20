@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dataflow.local/contracts/pipeline-graph-v1.schema.json",
+  "title": "DataFlow Pipeline Graph v1",
+  "type": "object",
+  "required": ["schema_version", "nodes", "edges"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "nodes": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "type_version", "position", "config"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1, "maxLength": 128},
+          "type": {"type": "string", "minLength": 1, "maxLength": 128},
+          "type_version": {"type": "integer", "minimum": 1},
+          "position": {
+            "type": "object",
+            "required": ["x", "y"],
+            "properties": {
+              "x": {"type": "number"},
+              "y": {"type": "number"}
+            },
+            "additionalProperties": false
+          },
+          "config": {"type": "object"},
+          "schema_hints": {"$ref": "data-schema-v1.schema.json"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "required": ["id", "source", "source_port", "target", "target_port"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1, "maxLength": 128},
+          "source": {"type": "string", "minLength": 1, "maxLength": 128},
+          "source_port": {"type": "string", "minLength": 1, "maxLength": 128},
+          "target": {"type": "string", "minLength": 1, "maxLength": 128},
+          "target_port": {"type": "string", "minLength": 1, "maxLength": 128}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
