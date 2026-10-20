@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Graph\AssetResolver;
-use App\Graph\UnavailableAssetResolver;
+use App\Graph\DatabaseAssetResolver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -13,7 +13,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(AssetResolver::class, UnavailableAssetResolver::class);
+        $this->app->bind(AssetResolver::class, DatabaseAssetResolver::class);
     }
 
     /**
@@ -21,6 +21,5 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->app->bind(AssetResolver::class, UnavailableAssetResolver::class);
     }
 }

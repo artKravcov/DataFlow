@@ -33,7 +33,8 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
 	const method = (init.method ?? 'GET').toUpperCase()
 	const headers = new Headers(init.headers)
 	headers.set('Accept', 'application/json')
-	if (init.body !== undefined) headers.set('Content-Type', 'application/json')
+	if (init.body !== undefined && !(init.body instanceof FormData))
+		headers.set('Content-Type', 'application/json')
 	if (!['GET', 'HEAD'].includes(method)) {
 		const token = csrfToken()
 		if (token) headers.set('X-XSRF-TOKEN', token)

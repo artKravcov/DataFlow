@@ -14,6 +14,8 @@ RUN apk add --no-cache git unzip postgresql-libs libzip oniguruma libxml2 \
 
 COPY --from=composer:2.10.3 /usr/bin/composer /usr/local/bin/composer
 
+RUN printf 'upload_max_filesize=10M\npost_max_size=12M\n' > /usr/local/etc/php/conf.d/uploads.ini
+
 WORKDIR /var/www/html
 
 COPY backend/composer.json backend/composer.lock ./

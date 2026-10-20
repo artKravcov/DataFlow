@@ -17,6 +17,52 @@ const canEdit = computed(() =>
 )
 const pipeline = ref<Pipeline | null>(null)
 const definitions = ref<NodeDefinition[]>([])
+type Asset = { id: number; name: string; size_bytes: number }
+const assets = ref<Asset[]>([])
+const assetPage = ref(1)
+const assetHasMore = ref(false)
+const assetUrl = computed(() => `/organizations/${orgId.value}/assets`)
+async function loadAssets(page = 1): Promise<void> {
+	const items = await request<Asset[]>(`${assetUrl.value}?page=${page}`)
+	assets.value = items
+	assetPage.value = page
+	assetHasMore.value = items.length === 25
+}
+async function uploadAsset(event: Event): Promise<void> {
+	const input = event.target as HTMLInputElement
+	const file = input.files?.[0]
+	const node = selected.value
+	if (!file || !node || busy.value || !canEdit.value) return
+	busy.value = true
+	error.value = ''
+	try {
+		await ensureCsrf()
+		const form = new FormData()
+		form.append('file', file)
+		const asset = await request<Asset>(assetUrl.value, { method: 'POST', body: form })
+		await loadAssets(1)
+		if (!assets.value.some((item) => item.id === asset.id)) assets.value.unshift(asset)
+		node.config.asset_id = String(asset.id)
+	} catch (reason) {
+		error.value =
+			reason instanceof ApiError && reason.status === 413
+				? 'Файл слишком большой: максимум 10 МиБ.'
+				: message(reason)
+	} finally {
+		input.value = ''
+		busy.value = false
+	}
+}
+async function changeAssetPage(page: number): Promise<void> {
+	busy.value = true
+	try {
+		await loadAssets(page)
+	} catch (reason) {
+		error.value = message(reason)
+	} finally {
+		busy.value = false
+	}
+}
 const graph = ref<Graph>({ schema_version: 1, nodes: [], edges: [] })
 const saved = ref('')
 const selectedId = ref('')
@@ -215,7 +261,7 @@ function message(reason: unknown): string {
 					const name = match[2] ?? ''
 					const title = `${node ? display(node) : 'Блок'}: ${fieldLabels[name] ?? name}`
 					if (name === 'asset_id')
-						return `${title}: загрузка файлов появится на следующем этапе.`
+						return `${title}: выберите доступный файл этой организации.`
 					if (/required/i.test(item)) return `${title}: заполните поле.`
 					return `${title}: проверьте значение. (${item})`
 				}
@@ -239,13 +285,17 @@ async function load(discard = false): Promise<void> {
 	error.value = ''
 	notices.value = []
 	try {
-		const [item, catalog] = await Promise.all([
+		const [item, catalog, assetItems] = await Promise.all([
 			request<Pipeline>(url.value),
 			request<NodeDefinition[]>('/node-types'),
+			request<Asset[]>(`${assetUrl.value}?page=1`),
 		])
 		if (sequence !== loadSequence) return
 		pipeline.value = item
 		definitions.value = catalog
+		assets.value = assetItems
+		assetPage.value = 1
+		assetHasMore.value = assetItems.length === 25
 		graph.value = structuredClone(item.graph)
 		saved.value = JSON.stringify(graph.value)
 		selectedId.value = ''
@@ -419,7 +469,61 @@ onBeforeUnmount(() => {
 						><h2>{{ display(selected) }}</h2>
 						<fieldset :disabled="!canEdit || busy">
 							<template v-if="selected.type === 'csv.source'"
-								><p>Загрузка файлов появится на следующем этапе.</p>
+								><label
+									>CSV файл<select
+										:value="textConfig('asset_id')"
+										@change="
+											setConfig(
+												'asset_id',
+												($event.target as HTMLSelectElement).value,
+											)
+										"
+									>
+										<option value="">Выберите файл</option>
+										<option
+											v-if="
+												textConfig('asset_id') &&
+												!assets.some(
+													(item) =>
+														String(item.id) === textConfig('asset_id'),
+												)
+											"
+											:value="textConfig('asset_id')"
+										>
+											Выбранный файл · {{ textConfig('asset_id') }}
+										</option>
+										<option
+											v-for="asset in assets"
+											:key="asset.id"
+											:value="String(asset.id)"
+										>
+											{{ asset.name }} · {{ asset.size_bytes }} байт
+										</option>
+									</select></label
+								>
+								<div>
+									<button
+										type="button"
+										:disabled="assetPage <= 1"
+										@click="changeAssetPage(assetPage - 1)"
+									>
+										Назад
+									</button>
+									Страница {{ assetPage }}
+									<button
+										type="button"
+										:disabled="!assetHasMore"
+										@click="changeAssetPage(assetPage + 1)"
+									>
+										Далее
+									</button>
+								</div>
+								<label
+									>Загрузить CSV (до 10 МиБ)<input
+										type="file"
+										accept=".csv,text/csv"
+										@change="uploadAsset"
+								/></label>
 								<label
 									>Разделитель<select
 										:value="textConfig('delimiter') || ','"
