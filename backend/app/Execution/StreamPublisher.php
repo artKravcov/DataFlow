@@ -23,7 +23,7 @@ class StreamPublisher
         }
         $json = json_encode($envelope, JSON_THROW_ON_ERROR);
         // rawCommand intentionally avoids Laravel's connection key prefix.
-        $id = Redis::connection()->client()->rawCommand('XADD', $stream, '*', 'envelope', $json);
+        $id = Redis::connection('streams')->client()->rawCommand('XADD', $stream, '*', 'envelope', $json);
         if (! is_string($id)) {
             throw new \RuntimeException('Redis did not confirm publication.');
         }

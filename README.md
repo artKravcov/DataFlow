@@ -174,4 +174,10 @@ docker compose exec backend php artisan dataflow:publish-contract-fixture $strea
 docker compose run --rm --no-deps -e REDIS_HOST=redis worker npm run test:redis -- $stream
 ```
 
-Отдельные проверки parser и сборки worker: `cd worker; npm ci; npm test`. Проверка PHP → Redis → Node выполнена; эти команды не означают готовности dispatcher, claim или runtime.
+Отдельные проверки parser и сборки worker: `cd worker; npm ci; npm test`. Проверка PHP → Redis → Node выполнена; эти команды не означают готовности автоматической доставки, claim или runtime.
+
+Отправитель outbox реализован как ограниченный однократный вызов, но не включён по расписанию: worker и восстановление после потери Redis ещё не готовы. Не запускайте его для рабочих данных до завершения этих частей. Проверка с тестовой PostgreSQL и временным потоком Redis:
+
+```powershell
+docker compose exec -T -e DATAFLOW_REDIS_INTEGRATION=1 backend php artisan test --filter=OutboxDispatcherTest
+```
