@@ -58,7 +58,7 @@ class ExecutionController extends Controller
         if (! is_array($input) || ! isset($input['type']) || ! is_string($input['type'])) {
             return $this->error('INVALID_REQUEST', 422);
         }
-        $types = ['node.started', 'node.succeeded', 'node.failed', 'execution.failed'];
+        $types = ['node.started', 'node.succeeded', 'node.failed', 'execution.failed', 'execution.succeeded'];
         if (! in_array($input['type'], $types, true)) {
             return $this->error('INVALID_REQUEST', 422);
         }

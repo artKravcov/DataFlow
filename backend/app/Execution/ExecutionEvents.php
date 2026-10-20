@@ -5,6 +5,7 @@ namespace App\Execution;
 use App\Models\Execution;
 use App\Models\ExecutionNode;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ExecutionEvents
 {
@@ -28,7 +29,8 @@ class ExecutionEvents
             $existing = DB::table('execution_events')->where('execution_id', $executionId)->where('event_id', $event['event_id'])->first();
             $active = $execution->status === 'running' && $execution->lease_expires_at && $execution->lease_expires_at->gt(now());
             if ($existing) {
-                $terminalConfirmation = $execution->status === 'failed' && $existing->type === 'execution.failed';
+                $terminalConfirmation = ($execution->status === 'failed' && $existing->type === 'execution.failed') ||
+                    ($execution->status === 'succeeded' && $existing->type === 'execution.succeeded');
 
                 return ($active || $terminalConfirmation) && hash_equals($existing->payload_hash, $hash) ? $existing->sequence : null;
             }
@@ -54,6 +56,28 @@ class ExecutionEvents
 
     private function transition(Execution $execution, array $event): bool
     {
+        if ($event['type'] === 'execution.succeeded') {
+            $snapshotNodes = $execution->snapshot['graph']['nodes'] ?? [];
+            $nodes = ExecutionNode::where('execution_id', $execution->id)->get();
+            if (! $snapshotNodes || $nodes->count() !== count($snapshotNodes) || $nodes->contains(fn ($node) => $node->status !== 'succeeded')) {
+                return false;
+            }
+            $destinations = 0;
+            foreach ($snapshotNodes as $snapshotNode) {
+                if (($snapshotNode['type'] ?? null) === 'csv.destination') {
+                    $destinations++;
+                    if (! $this->artifactReady($execution, $snapshotNode['id'])) {
+                        return false;
+                    }
+                }
+            }
+            if ($destinations === 0) {
+                return false;
+            }
+            $execution->update(['status' => 'succeeded']);
+
+            return true;
+        }
         if ($event['type'] === 'execution.failed') {
             ExecutionNode::where('execution_id', $execution->id)->where('status', 'running')->update(['status' => 'failed']);
             ExecutionNode::where('execution_id', $execution->id)->where('status', 'pending')->update(['status' => 'skipped']);
@@ -83,10 +107,11 @@ class ExecutionEvents
             return false;
         }
         if ($event['type'] === 'node.succeeded') {
-            // A destination may succeed only after its output asset is persisted; upload is a later milestone.
             foreach ($execution->snapshot['graph']['nodes'] ?? [] as $snapshotNode) {
                 if ($snapshotNode['id'] === $node->snapshot_node_id && $snapshotNode['type'] === 'csv.destination') {
-                    return false;
+                    if (! $this->artifactReady($execution, $node->snapshot_node_id)) {
+                        return false;
+                    }
                 }
             }
             $node->update(['status' => 'succeeded']);
@@ -100,5 +125,24 @@ class ExecutionEvents
         }
 
         return false;
+    }
+
+    private function artifactReady(Execution $execution, string $nodeId): bool
+    {
+        $asset = DB::table('execution_artifacts')
+            ->join('file_assets', 'file_assets.id', '=', 'execution_artifacts.file_asset_id')
+            ->where('execution_artifacts.execution_id', $execution->id)
+            ->where('execution_artifacts.snapshot_node_id', $nodeId)
+            ->where('file_assets.organization_id', $execution->organization_id)
+            ->where('file_assets.state', 'ready')
+            ->select('file_assets.storage_key', 'file_assets.sha256', 'file_assets.size_bytes')->first();
+        $disk = Storage::disk('local');
+        if (! $asset || $asset->size_bytes > config('dataflow.max_input_bytes') ||
+            ! $disk->exists($asset->storage_key) || $disk->size($asset->storage_key) !== $asset->size_bytes) {
+            return false;
+        }
+        $digest = hash_file('sha256', $disk->path($asset->storage_key));
+
+        return is_string($digest) && hash_equals($asset->sha256, $digest);
     }
 }

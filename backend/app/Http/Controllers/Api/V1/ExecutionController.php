@@ -77,8 +77,9 @@ class ExecutionController extends Controller
         abort_unless(preg_match('/^[1-9][0-9]{0,17}$/D', $execution), 404);
         $item = Execution::where('organization_id', $organization->id)->findOrFail($execution);
         $nodes = ExecutionNode::where('execution_id', $item->id)->orderBy('id')->get(['snapshot_node_id', 'status']);
+        $artifacts = $item->status === 'succeeded' ? DB::table('execution_artifacts')->join('file_assets', 'file_assets.id', '=', 'execution_artifacts.file_asset_id')->where('execution_artifacts.execution_id', $item->id)->where('file_assets.organization_id', $organization->id)->where('file_assets.state', 'ready')->orderBy('execution_artifacts.id')->get(['execution_artifacts.snapshot_node_id', 'file_assets.id as asset_id', 'file_assets.original_name as name', 'file_assets.size_bytes']) : collect();
 
-        return response()->json(['data' => ['id' => $item->id, 'pipeline_id' => $item->pipeline_id, 'revision' => $item->revision, 'status' => $item->status, 'snapshot' => $item->snapshot, 'nodes' => $nodes, 'created_at' => $item->created_at]]);
+        return response()->json(['data' => ['id' => $item->id, 'pipeline_id' => $item->pipeline_id, 'revision' => $item->revision, 'status' => $item->status, 'snapshot' => $item->snapshot, 'nodes' => $nodes, 'artifacts' => $artifacts, 'error_code' => $item->error_code, 'created_at' => $item->created_at]]);
     }
 
     private function conflict(Request $request, string $code, string $message): JsonResponse
