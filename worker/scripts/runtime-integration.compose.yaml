@@ -36,7 +36,8 @@ services:
       DB_PASSWORD: runtime_test_password
       REDIS_CLIENT: phpredis
       REDIS_HOST: redis
-      SESSION_DRIVER: array
+      SESSION_DRIVER: redis
+      SANCTUM_STATEFUL_DOMAINS: localhost:18089,127.0.0.1:18089
       CACHE_STORE: array
       FILESYSTEM_DISK: local
       DATAFLOW_RUNTIME_TEST: "1"
@@ -49,6 +50,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      default:
+        aliases: [backend]
 
   queue-manager:
     build:
@@ -73,6 +77,21 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
+
+  frontend:
+    profiles: [ui]
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/frontend/Dockerfile
+
+  gateway:
+    profiles: [ui]
+    image: nginx:1.31.4-trixie
+    ports:
+      - "127.0.0.1:18089:80"
+    volumes:
+      - ../../infrastructure/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [api, frontend]
 
 volumes:
   runtime_files:

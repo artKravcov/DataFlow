@@ -20,6 +20,18 @@ use Illuminate\Validation\ValidationException;
 
 class ExecutionController extends Controller
 {
+    public function index(Organization $organization, Pipeline $pipeline): JsonResponse
+    {
+        Gate::authorize('view', $organization);
+        $pipeline = Pipeline::where('organization_id', $organization->id)->findOrFail($pipeline->id);
+        Gate::authorize('view', $pipeline);
+        $items = Execution::where('organization_id', $organization->id)
+            ->where('pipeline_id', $pipeline->id)->orderByDesc('id')->limit(10)
+            ->get(['id', 'status', 'revision', 'created_at']);
+
+        return response()->json(['data' => $items]);
+    }
+
     public function store(Request $request, Organization $organization, Pipeline $pipeline, GraphInput $validator, PipelineGraph $graphs): JsonResponse
     {
         Gate::authorize('view', $organization);

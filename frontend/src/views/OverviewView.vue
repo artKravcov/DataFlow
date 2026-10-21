@@ -6,9 +6,9 @@ const route = useRoute()
 	<section class="page">
 		<h1>Обзор</h1>
 		<section class="card">
-			<h2>Запусков пока нет</h2>
+			<h2>Запуски потоков</h2>
 			<p class="muted">
-				Execution API ещё не реализован, поэтому здесь нет вымышленных запусков или метрик.
+				Откройте поток в проекте, чтобы запустить его и посмотреть последние результаты.
 			</p>
 			<RouterLink :to="{ name: 'projects', params: { org: route.params.org } }"
 				>Перейти к проектам</RouterLink

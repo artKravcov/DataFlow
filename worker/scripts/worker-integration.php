@@ -6,8 +6,8 @@ $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 if (config('app.env') !== 'testing' || config('database.connections.pgsql.database') !== 'dataflow_test' || DB::selectOne('select current_database() as name')->name !== 'dataflow_test') {
     throw new RuntimeException('Refusing to use a non-test database.');
 }
-if (in_array(($argv[1] ?? ''), ['prepare', 'prepare-runtime'], true)) {
-    $runtime = $argv[1] === 'prepare-runtime';
+if (in_array(($argv[1] ?? ''), ['prepare', 'prepare-runtime', 'prepare-ui'], true)) {
+    $runtime = in_array($argv[1], ['prepare-runtime', 'prepare-ui'], true);
     if ($runtime && getenv('DATAFLOW_RUNTIME_TEST') !== '1') {
         throw new RuntimeException('Runtime fixtures require the isolated runtime test environment.');
     }
@@ -21,6 +21,20 @@ if (in_array(($argv[1] ?? ''), ['prepare', 'prepare-runtime'], true)) {
     $asset = App\Models\FileAsset::create(['organization_id' => $org->id, 'original_name' => 'input.csv', 'storage_key' => $key, 'size_bytes' => strlen($content), 'sha256' => hash('sha256', $content), 'state' => 'ready']);
     $graph = json_decode(file_get_contents('/var/www/contracts/fixtures/csv-filter-map-v1.json'), true, flags: JSON_THROW_ON_ERROR)['graph'];
     $graph['nodes'][0]['config']['asset_id'] = (string) $asset->id;
+    if ($argv[1] === 'prepare-ui') {
+        $user = App\Models\User::factory()->create(['email' => 'runtime-test@example.test']);
+        App\Models\Membership::factory()->create(['user_id' => $user->id, 'organization_id' => $org->id, 'role' => 'owner']);
+        foreach ($graph['nodes'] as $node) {
+            $pipeline->nodes()->create(['node_id' => $node['id'], 'type' => $node['type'], 'type_version' => $node['type_version'], 'position' => $node['position'], 'config' => $node['config'], 'schema_hints' => $node['schema_hints'] ?? null]);
+        }
+        foreach ($graph['edges'] as $edge) {
+            $pipeline->edges()->create(['edge_id' => $edge['id'], 'source_node_id' => $edge['source'], 'source_port' => $edge['source_port'], 'target_node_id' => $edge['target'], 'target_port' => $edge['target_port']]);
+        }
+        $pipeline->revision = 1;
+        $pipeline->save();
+        echo json_encode(['organization_id' => $org->id, 'pipeline_id' => $pipeline->id], JSON_THROW_ON_ERROR);
+        exit;
+    }
     $execution = App\Models\Execution::create(['organization_id' => $org->id, 'pipeline_id' => $pipeline->id, 'requested_by' => App\Models\User::factory()->create()->id, 'idempotency_key' => (string) Illuminate\Support\Str::uuid(), 'revision' => 1, 'status' => 'queued', 'snapshot' => ['revision' => 1, 'graph' => $graph]]);
     foreach ($graph['nodes'] as $node) {
         App\Models\ExecutionNode::create(['execution_id' => $execution->id, 'snapshot_node_id' => $node['id'], 'status' => 'pending']);

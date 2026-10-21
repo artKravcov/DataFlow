@@ -5,6 +5,7 @@ import { VueFlow, type Connection, type NodeDragEvent } from '@vue-flow/core'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import { ApiError, ensureCsrf, request } from '@/lib/api'
+import ExecutionPanel from '@/components/ExecutionPanel.vue'
 import type { Graph, GraphNode, NodeDefinition, Pipeline, SchemaField } from '@/lib/graph'
 import { useAuthStore } from '@/stores/auth'
 
@@ -408,16 +409,20 @@ onBeforeUnmount(() => {
 				<div class="actions">
 					<button v-if="canEdit" :disabled="busy || !dirty" @click="save">
 						Сохранить</button
-					><button :disabled="busy" @click="validate">Проверить</button
-					><button disabled title="Исполнение появится на следующем этапе">
-						Запустить
-					</button>
+					><button :disabled="busy" @click="validate">Проверить</button>
 				</div>
 			</div>
 			<p v-if="!canEdit" class="muted">
 				Только просмотр: ваша роль не позволяет изменять граф.
 			</p>
-			<p class="muted">Запуск появится после реализации исполнения.</p>
+			<ExecutionPanel
+				:org-id="orgId"
+				:pipeline-id="pipelineId"
+				:user-id="auth.user?.id ?? 0"
+				:revision="pipeline.revision"
+				:dirty="dirty"
+				:can-edit="canEdit"
+			/>
 			<div v-if="error" class="notice error" role="alert">
 				{{ error }}
 				<button v-if="conflict" @click="load(true)">Загрузить версию сервера</button>

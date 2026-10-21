@@ -102,6 +102,29 @@ class ExecutionApiTest extends TestCase
         $this->assertDatabaseCount('executions', 1);
     }
 
+    public function test_pipeline_execution_list_is_bounded_and_isolated_by_organization(): void
+    {
+        [$owner, $org, $project, $pipeline] = $this->context();
+        $url = "/api/v1/organizations/$org->id/pipelines/$pipeline->id/executions";
+        $id = $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson($url, ['revision' => 1])->assertStatus(202)->json('data.id');
+        $first = Execution::findOrFail($id);
+        $first->update(['status' => 'succeeded']);
+        for ($i = 0; $i < 11; $i++) {
+            Execution::create(['organization_id' => $org->id, 'pipeline_id' => $pipeline->id, 'requested_by' => $owner->id, 'idempotency_key' => (string) Str::uuid(), 'revision' => 1, 'status' => 'succeeded', 'snapshot' => $first->snapshot]);
+        }
+        $otherPipeline = Pipeline::factory()->forProject($project)->create();
+        Execution::create(['organization_id' => $org->id, 'pipeline_id' => $otherPipeline->id, 'requested_by' => $owner->id, 'idempotency_key' => (string) Str::uuid(), 'revision' => 1, 'status' => 'succeeded', 'snapshot' => $first->snapshot]);
+        $response = $this->getJson($url)->assertOk()->assertJsonCount(10, 'data')->assertJsonMissing(['id' => $first->id]);
+        self::assertGreaterThan($response->json('data.1.id'), $response->json('data.0.id'));
+        $viewer = User::factory()->create();
+        Membership::factory()->create(['user_id' => $viewer->id, 'organization_id' => $org->id, 'role' => 'viewer']);
+        $this->actingAs($viewer)->getJson($url)->assertOk()->assertJsonCount(10, 'data');
+        $other = Organization::factory()->create();
+        Membership::factory()->create(['user_id' => $owner->id, 'organization_id' => $other->id, 'role' => 'owner']);
+        $this->actingAs($owner)->getJson("/api/v1/organizations/$other->id/pipelines/$pipeline->id/executions")->assertNotFound();
+        $this->actingAs(User::factory()->create())->getJson($url)->assertNotFound();
+    }
+
     public function test_failure_to_create_outbox_rolls_back_execution_and_nodes(): void
     {
         [, $org, , $pipeline] = $this->context();
