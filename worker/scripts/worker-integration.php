@@ -6,7 +6,11 @@ $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 if (config('app.env') !== 'testing' || config('database.connections.pgsql.database') !== 'dataflow_test' || DB::selectOne('select current_database() as name')->name !== 'dataflow_test') {
     throw new RuntimeException('Refusing to use a non-test database.');
 }
-if (($argv[1] ?? '') === 'prepare') {
+if (in_array(($argv[1] ?? ''), ['prepare', 'prepare-runtime'], true)) {
+    $runtime = $argv[1] === 'prepare-runtime';
+    if ($runtime && getenv('DATAFLOW_RUNTIME_TEST') !== '1') {
+        throw new RuntimeException('Runtime fixtures require the isolated runtime test environment.');
+    }
     Artisan::call('migrate', ['--force' => true]);
     $org = App\Models\Organization::factory()->create();
     $project = $org->projects()->create(['name' => 'Integration']);
@@ -23,11 +27,20 @@ if (($argv[1] ?? '') === 'prepare') {
     }
     $stream = 'dataflow:contract-test:'.Illuminate\Support\Str::uuid();
     $envelope = ['message_version' => 1, 'message_id' => (string) Illuminate\Support\Str::uuid(), 'execution_id' => (string) $execution->id];
+    if ($runtime) {
+        App\Models\OutboxMessage::create(['id' => $envelope['message_id'], 'execution_id' => $execution->id, 'message_type' => 'execution.requested', 'payload' => $envelope]);
+        echo json_encode(['execution_id' => (string) $execution->id], JSON_THROW_ON_ERROR);
+        exit;
+    }
     $publisher = app(App\Execution\StreamPublisher::class);
     $publisher->publish($envelope, $stream);
     Illuminate\Support\Facades\Redis::connection('streams')->client()->rawCommand('EXPIRE', $stream, '120');
     $publisher->publish($envelope, $stream);
     echo json_encode(['execution_id' => (string) $execution->id, 'stream' => $stream], JSON_THROW_ON_ERROR);
+} elseif (($argv[1] ?? '') === 'status' && getenv('DATAFLOW_RUNTIME_TEST') === '1' && preg_match('/^[1-9][0-9]{0,17}$/D', $argv[2] ?? '')) {
+    $execution = App\Models\Execution::findOrFail($argv[2]);
+    $message = App\Models\OutboxMessage::where('execution_id', $execution->id)->firstOrFail();
+    echo json_encode(['status' => $execution->status, 'published' => $message->published_at !== null], JSON_THROW_ON_ERROR);
 } elseif (($argv[1] ?? '') === 'verify' && preg_match('/^[1-9][0-9]{0,17}$/D', $argv[2] ?? '')) {
     $execution = App\Models\Execution::findOrFail($argv[2]);
     $artifact = DB::table('execution_artifacts')->where('execution_id', $execution->id)->first();

@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:18.6-alpine3.24
+    environment:
+      POSTGRES_DB: dataflow_test
+      POSTGRES_USER: runtime_test
+      POSTGRES_PASSWORD: runtime_test_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U runtime_test -d dataflow_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  redis:
+    image: redis:8.10.1-alpine3.23
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/backend/Dockerfile
+    environment: &backend-environment
+      APP_NAME: DataFlowRuntimeTest
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_URL: http://api:8000
+      INTERNAL_SERVICE_TOKEN: runtime-test-service-token-0123456789
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_DATABASE: dataflow_test
+      DB_USERNAME: runtime_test
+      DB_PASSWORD: runtime_test_password
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      SESSION_DRIVER: array
+      CACHE_STORE: array
+      FILESYSTEM_DISK: local
+      DATAFLOW_RUNTIME_TEST: "1"
+      DATAFLOW_WORKER_ENABLED: "1"
+    volumes:
+      - runtime_files:/var/www/html/storage/app
+      - ./worker-integration.php:/tmp/worker-integration.php:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  queue-manager:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/backend/Dockerfile
+    command: ["php", "artisan", "dataflow:queue-loop"]
+    environment: *backend-environment
+    depends_on:
+      api:
+        condition: service_started
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/worker/Dockerfile
+    environment:
+      DATAFLOW_WORKER_ENABLED: "1"
+      DATAFLOW_INTERNAL_URL: http://api:8000
+      INTERNAL_SERVICE_TOKEN: runtime-test-service-token-0123456789
+    depends_on:
+      api:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+volumes:
+  runtime_files:
