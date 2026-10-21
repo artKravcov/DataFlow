@@ -26,7 +26,7 @@ Artisan::command('dataflow:publish-contract-fixture {stream}', function (StreamP
     $this->info('Published two identical test envelopes.');
 })->purpose('Publish a temporary cross-runtime contract fixture');
 
-// Deliberately not scheduled until worker claim and Redis recovery are implemented.
+// Bounded operations are also used by the opt-in runtime loop below.
 Artisan::command('dataflow:dispatch-outbox {--limit=25}', function (OutboxDispatcher $dispatcher) {
     $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 100]]);
     if ($limit === false) {
@@ -43,7 +43,6 @@ Artisan::command('dataflow:dispatch-outbox {--limit=25}', function (OutboxDispat
     $this->info("Published: {$counts['published']}; retry pending: {$counts['retry']}.");
 })->purpose('Publish a bounded batch of outbox messages');
 
-// Bounded, manually invoked until a long-running worker and recovery scheduler are connected.
 Artisan::command('dataflow:recover-executions {--limit=25}', function (QueueReconciler $reconciler, ExecutionLease $leases) {
     $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 100]]);
     if ($limit === false) {
@@ -63,3 +62,30 @@ Artisan::command('dataflow:recover-executions {--limit=25}', function (QueueReco
     }
     $this->info("Worker lost: $lost; waiting: {$counts['waiting']}; republish: {$counts['republish']}; queue timeout: {$counts['timed_out']}.");
 })->purpose('Recover a bounded batch of stalled executions');
+
+// Each iteration is bounded; failure of either task does not prevent the other.
+Artisan::command('dataflow:queue-loop {--once}', function () {
+    if (! $this->option('once') && env('DATAFLOW_WORKER_ENABLED', '0') !== '1') {
+        $this->error('Queue manager requires DATAFLOW_WORKER_ENABLED=1.');
+
+        return 1;
+    }
+    do {
+        $failed = false;
+        foreach (['dataflow:recover-executions', 'dataflow:dispatch-outbox'] as $command) {
+            try {
+                if (Artisan::call($command, ['--limit' => 25]) !== 0) {
+                    throw new RuntimeException('Queue task failed.');
+                }
+            } catch (Throwable $exception) {
+                // Do not expose database addresses, payloads, or credentials in logs.
+                $this->error("Queue task $command failed; it will be retried.");
+                $failed = true;
+            }
+        }
+        if ($this->option('once')) {
+            return $failed ? 1 : 0;
+        }
+        sleep(5);
+    } while (true);
+})->purpose('Run bounded queue recovery and dispatch continuously');

@@ -116,4 +116,50 @@ class ExecutionRecoveryTest extends TestCase
         self::assertSame($message->id, $published['message_id']);
         self::assertSame((string) $execution->id, $published['execution_id']);
     }
+
+    public function test_queue_loop_recovers_then_dispatches_a_bounded_batch(): void
+    {
+        [$execution, $message] = $this->queued();
+        $message->update(['published_at' => now()->subSeconds(30)]);
+        $publisher = new class extends StreamPublisher
+        {
+            public array $published = [];
+
+            public function publish(array $envelope, string $stream = self::STREAM): string
+            {
+                $this->published[] = $envelope;
+
+                return '1-0';
+            }
+        };
+        $this->app->instance(StreamPublisher::class, $publisher);
+
+        $this->artisan('dataflow:queue-loop', ['--once' => true])->assertExitCode(0);
+
+        self::assertNotNull($message->fresh()->published_at);
+        self::assertSame($message->id, $publisher->published[0]['message_id']);
+        self::assertSame((string) $execution->id, $publisher->published[0]['execution_id']);
+        self::assertCount(1, $publisher->published);
+    }
+
+    public function test_queue_loop_still_dispatches_if_recovery_fails(): void
+    {
+        [$execution, $message] = $this->queued(10);
+        $this->mock(QueueReconciler::class)->shouldReceive('reconcileOne')->once()->andThrow(new \RuntimeException('sensitive diagnostic'));
+        $publisher = new class extends StreamPublisher
+        {
+            public function publish(array $envelope, string $stream = self::STREAM): string
+            {
+                return '1-0';
+            }
+        };
+        $this->app->instance(StreamPublisher::class, $publisher);
+
+        $this->artisan('dataflow:queue-loop', ['--once' => true])
+            ->expectsOutput('Queue task dataflow:recover-executions failed; it will be retried.')
+            ->assertExitCode(1);
+
+        self::assertNotNull($message->fresh()->published_at);
+        self::assertSame('queued', $execution->fresh()->status);
+    }
 }

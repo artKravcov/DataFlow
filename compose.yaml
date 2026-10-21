@@ -93,12 +93,27 @@ services:
     build:
       context: .
       dockerfile: infrastructure/docker/worker/Dockerfile
-    restart: "no"
+    restart: on-failure:3
     environment:
       DATAFLOW_WORKER_ENABLED: ${DATAFLOW_WORKER_ENABLED:-0}
       DATAFLOW_INTERNAL_URL: http://backend:8000
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-}
     networks: [dataflow]
+
+  queue-manager:
+    extends:
+      service: backend
+    profiles: [runtime]
+    environment:
+      DATAFLOW_WORKER_ENABLED: ${DATAFLOW_WORKER_ENABLED:-0}
+    command: ["php", "artisan", "dataflow:queue-loop"]
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   gateway:
     image: nginx:1.31.4-trixie
