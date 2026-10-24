@@ -125,6 +125,24 @@ class ExecutionApiTest extends TestCase
         $this->actingAs(User::factory()->create())->getJson($url)->assertNotFound();
     }
 
+    public function test_organization_execution_history_filters_and_hides_foreign_identifiers(): void
+    {
+        [$owner, $org, $project, $pipeline] = $this->context();
+        $first = Execution::create(['organization_id' => $org->id, 'pipeline_id' => $pipeline->id, 'requested_by' => $owner->id, 'idempotency_key' => (string) Str::uuid(), 'revision' => 1, 'status' => 'succeeded', 'snapshot' => ['graph' => []]]);
+        $failed = Execution::create(['organization_id' => $org->id, 'pipeline_id' => $pipeline->id, 'requested_by' => $owner->id, 'idempotency_key' => (string) Str::uuid(), 'revision' => 1, 'status' => 'failed', 'error_code' => 'INVALID_CSV', 'snapshot' => ['graph' => []]]);
+        $response = $this->getJson("/api/v1/organizations/$org->id/executions?status=failed&project_id=$project->id")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $failed->id)->assertJsonPath('data.0.pipeline_name', $pipeline->name)->assertJsonPath('meta.total', 1);
+        $this->assertNotEquals($first->id, $response->json('data.0.id'));
+        $viewer = User::factory()->create();
+        Membership::factory()->create(['user_id' => $viewer->id, 'organization_id' => $org->id, 'role' => 'viewer']);
+        $this->actingAs($viewer)->getJson("/api/v1/organizations/$org->id/executions")->assertOk()->assertJsonCount(2, 'data');
+        $foreign = Organization::factory()->create();
+        $foreignProject = $foreign->projects()->create(['name' => 'Foreign']);
+        $foreignPipeline = Pipeline::factory()->forProject($foreignProject)->create();
+        Membership::factory()->create(['user_id' => $owner->id, 'organization_id' => $foreign->id, 'role' => 'owner']);
+        $this->actingAs($owner)->getJson("/api/v1/organizations/$org->id/executions?pipeline_id=$foreignPipeline->id")->assertNotFound();
+        $this->actingAs(User::factory()->create())->getJson("/api/v1/organizations/$org->id/executions")->assertNotFound();
+    }
+
     public function test_failure_to_create_outbox_rolls_back_execution_and_nodes(): void
     {
         [, $org, , $pipeline] = $this->context();

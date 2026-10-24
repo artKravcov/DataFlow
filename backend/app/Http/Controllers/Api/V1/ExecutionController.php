@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ExecutionController extends Controller
@@ -30,6 +31,38 @@ class ExecutionController extends Controller
             ->get(['id', 'status', 'revision', 'created_at']);
 
         return response()->json(['data' => $items]);
+    }
+
+    public function history(Request $request, Organization $organization): JsonResponse
+    {
+        Gate::authorize('view', $organization);
+        $input = $request->validate([
+            'status' => ['nullable', Rule::in(['queued', 'running', 'succeeded', 'failed'])],
+            'pipeline_id' => ['nullable', 'integer', 'min:1'],
+            'project_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+        if (isset($input['pipeline_id'])) {
+            Pipeline::where('organization_id', $organization->id)->findOrFail($input['pipeline_id']);
+        }
+        if (isset($input['project_id'])) {
+            Project::where('organization_id', $organization->id)->findOrFail($input['project_id']);
+        }
+        $query = Execution::query()
+            ->join('pipelines', 'pipelines.id', '=', 'executions.pipeline_id')
+            ->join('projects', 'projects.id', '=', 'pipelines.project_id')
+            ->where('executions.organization_id', $organization->id)
+            ->select(['executions.id', 'executions.pipeline_id', 'executions.status', 'executions.revision', 'executions.error_code', 'executions.created_at', 'pipelines.name as pipeline_name', 'projects.id as project_id', 'projects.name as project_name']);
+        foreach (['status', 'pipeline_id'] as $field) {
+            if (isset($input[$field])) {
+                $query->where("executions.$field", $input[$field]);
+            }
+        }
+        if (isset($input['project_id'])) {
+            $query->where('projects.id', $input['project_id']);
+        }
+        $page = $query->orderByDesc('executions.id')->paginate(20);
+
+        return response()->json(['data' => $page->getCollection()->values(), 'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()]]);
     }
 
     public function store(Request $request, Organization $organization, Pipeline $pipeline, GraphInput $validator, PipelineGraph $graphs): JsonResponse

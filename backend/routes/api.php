@@ -33,5 +33,6 @@ Route::group(['prefix' => '/v1'], function () {
     Route::post('/organizations/{organization}/pipelines/{pipeline}/archive', [PipelineController::class, 'archive'])->middleware('auth:sanctum');
     Route::post('/organizations/{organization}/pipelines/{pipeline}/executions', [ExecutionController::class, 'store'])->middleware('auth:sanctum');
     Route::get('/organizations/{organization}/pipelines/{pipeline}/executions', [ExecutionController::class, 'index'])->middleware('auth:sanctum');
+    Route::get('/organizations/{organization}/executions', [ExecutionController::class, 'history'])->middleware('auth:sanctum');
     Route::get('/organizations/{organization}/executions/{execution}', [ExecutionController::class, 'show'])->middleware('auth:sanctum');
 });
