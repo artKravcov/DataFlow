@@ -836,7 +836,7 @@ h3 {
 }
 .builder-grid {
 	display: grid;
-	grid-template-columns: 210px minmax(380px, 1fr) 310px;
+	grid-template-columns: 180px minmax(400px, 1fr) 370px;
 	gap: 16px;
 	align-items: stretch;
 	margin: 18px 0;
@@ -845,7 +845,7 @@ h3 {
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: 12px;
-	padding: 16px;
+	padding: 14px;
 	min-width: 0;
 }
 .catalog-item {
@@ -854,16 +854,19 @@ h3 {
 	text-align: left;
 	background: #1a3152;
 	color: var(--text);
-	margin: 8px 0;
+	margin: 4px 0;
 	gap: 4px;
+	padding: 8px 10px;
+	font-size: 0.88rem;
 }
 small {
 	font-weight: 400;
 	color: var(--muted);
+	font-size: 0.78rem;
 }
 .canvas-wrap {
 	position: relative;
-	height: 560px;
+	height: 590px;
 	background: #0b1424;
 	border: 1px solid var(--border);
 	border-radius: 12px;
@@ -879,7 +882,7 @@ small {
 	pointer-events: none;
 }
 .settings {
-	max-height: 560px;
+	max-height: 590px;
 	overflow: auto;
 }
 fieldset {
@@ -949,7 +952,7 @@ select:focus-visible {
 		grid-template-columns: 1fr;
 	}
 	.canvas-wrap {
-		height: 430px;
+		height: 460px;
 	}
 	.settings {
 		max-height: none;
@@ -961,6 +964,9 @@ select:focus-visible {
 	border: 1px solid #5276a6;
 	border-radius: 9px;
 	box-shadow: 0 8px 22px rgb(0 0 0 / 0.28);
+	min-width: 142px;
+	padding: 11px 14px;
+	font-size: 0.9rem;
 }
 :deep(.vue-flow__node.selected) {
 	box-shadow:

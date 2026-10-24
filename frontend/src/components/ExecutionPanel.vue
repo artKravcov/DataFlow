@@ -254,12 +254,17 @@ onBeforeUnmount(() => {
 	border-radius: 12px;
 	padding: 16px;
 	margin: 16px 0;
+	display: grid;
+	gap: 10px;
 }
 .heading {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
+}
+.execution-panel p {
+	margin: 0;
 }
 h2 {
 	font-size: 1.1rem;
@@ -270,7 +275,7 @@ h2 {
 	color: var(--text);
 }
 .execution-content {
-	margin-top: 14px;
+	margin-top: 4px;
 }
 label {
 	display: grid;

@@ -146,11 +146,17 @@ label {
 input,
 textarea,
 select {
+	min-width: 0;
+	max-width: 100%;
 	color: var(--text);
 	background: var(--surface-input);
 	border: 1px solid var(--border-strong);
 	border-radius: 7px;
 	padding: 9px;
+}
+input[type='file'] {
+	width: 100%;
+	font-size: 0.8rem;
 }
 textarea {
 	min-height: 96px;
