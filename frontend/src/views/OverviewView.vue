@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { ApiError, request } from '@/lib/api'
+import { ApiError, requestEnvelope } from '@/lib/api'
 
 const route = useRoute()
 const orgId = computed(() => Number(route.params.org))
@@ -21,6 +21,8 @@ const items = ref<Item[]>([])
 const status = ref<Status | ''>('')
 const loading = ref(false)
 const error = ref('')
+const page = ref(1)
+const lastPage = ref(1)
 const statuses: Record<Status, string> = {
 	queued: 'В очереди',
 	running: 'Выполняется',
@@ -43,10 +45,14 @@ async function load(): Promise<void> {
 	loading.value = true
 	error.value = ''
 	try {
-		const query = status.value ? `?${new URLSearchParams({ status: status.value })}` : ''
-		const result = await request<Item[]>(`/organizations/${orgId.value}/executions${query}`)
+		const params = new URLSearchParams({ page: String(page.value) })
+		if (status.value) params.set('status', status.value)
+		const result = await requestEnvelope<Item[]>(
+			`/organizations/${orgId.value}/executions?${params}`,
+		)
 		if (current !== sequence) return
-		items.value = result
+		items.value = result.data
+		lastPage.value = result.meta?.last_page ?? 1
 	} catch (reason) {
 		if (current !== sequence) return
 		error.value =
@@ -63,6 +69,7 @@ async function load(): Promise<void> {
 watch(
 	[orgId, status],
 	() => {
+		page.value = 1
 		void load()
 	},
 	{ immediate: true },
@@ -71,6 +78,11 @@ onBeforeUnmount(() => {
 	sequence++
 	if (timer) clearTimeout(timer)
 })
+function changePage(next: number): void {
+	if (next < 1 || next > lastPage.value || loading.value) return
+	page.value = next
+	void load()
+}
 </script>
 
 <template>
@@ -112,6 +124,23 @@ onBeforeUnmount(() => {
 					>
 				</li>
 			</ul>
+			<nav v-if="lastPage > 1" class="pagination" aria-label="Страницы истории запусков">
+				<button
+					class="secondary"
+					:disabled="loading || page === 1"
+					@click="changePage(page - 1)"
+				>
+					Назад
+				</button>
+				<span>Страница {{ page }} из {{ lastPage }}</span>
+				<button
+					class="secondary"
+					:disabled="loading || page === lastPage"
+					@click="changePage(page + 1)"
+				>
+					Далее
+				</button>
+			</nav>
 			<RouterLink :to="{ name: 'projects', params: { org: orgId } }"
 				>Перейти к проектам</RouterLink
 			>
@@ -159,5 +188,13 @@ select {
 }
 .history .error {
 	color: #b91c1c;
+}
+.pagination {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.pagination span {
+	color: #64748b;
 }
 </style>

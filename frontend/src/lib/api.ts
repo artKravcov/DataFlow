@@ -11,7 +11,10 @@ export class ApiError extends Error {
 	}
 }
 
-type Envelope<T> = { data: T }
+export type ApiEnvelope<T> = {
+	data: T
+	meta?: Record<string, number>
+}
 type ErrorEnvelope = {
 	error?: { code?: string; message?: string; fields?: FieldErrors }
 }
@@ -30,6 +33,13 @@ export async function ensureCsrf(): Promise<void> {
 }
 
 export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+	return (await requestEnvelope<T>(path, init)).data
+}
+
+export async function requestEnvelope<T>(
+	path: string,
+	init: RequestInit = {},
+): Promise<ApiEnvelope<T>> {
 	const method = (init.method ?? 'GET').toUpperCase()
 	const headers = new Headers(init.headers)
 	headers.set('Accept', 'application/json')
@@ -46,7 +56,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
 		credentials: 'same-origin',
 	})
 	if (!response.ok) throw await toApiError(response)
-	return ((await response.json()) as Envelope<T>).data
+	return (await response.json()) as ApiEnvelope<T>
 }
 
 async function toApiError(response: Response): Promise<ApiError> {
