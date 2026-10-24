@@ -141,7 +141,9 @@ async function start(): Promise<void> {
 		if (
 			reason instanceof ApiError &&
 			(reason.status === 422 ||
-				['REVISION_CONFLICT', 'EXECUTION_ACTIVE', 'IDEMPOTENCY_CONFLICT'].includes(reason.code))
+				['REVISION_CONFLICT', 'EXECUTION_ACTIVE', 'IDEMPOTENCY_CONFLICT'].includes(
+					reason.code,
+				))
 		)
 			persistPending(null)
 		error.value = pending.value
@@ -247,9 +249,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .execution-panel {
-	background: white;
-	border: 1px solid #dbe4e9;
-	border-radius: 10px;
+	background: var(--surface-raised);
+	border: 1px solid var(--border);
+	border-radius: 12px;
 	padding: 16px;
 	margin: 16px 0;
 }
@@ -264,8 +266,8 @@ h2 {
 	margin: 0;
 }
 .secondary {
-	background: #e2e8f0;
-	color: #334155;
+	background: #243652;
+	color: var(--text);
 }
 .execution-content {
 	margin-top: 14px;
@@ -276,14 +278,10 @@ label {
 	max-width: 480px;
 }
 select {
-	padding: 9px;
-	border: 1px solid #94a3b8;
-	border-radius: 6px;
-	font: inherit;
-	background: white;
+	width: 100%;
 }
 .error {
-	color: #9f3434;
+	color: var(--danger);
 	overflow-wrap: anywhere;
 }
 </style>

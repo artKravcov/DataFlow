@@ -116,6 +116,6 @@ watch(organizationId, load)
 	text-decoration: none;
 }
 .project:hover {
-	border-color: #0f766e;
+	border-color: var(--primary);
 }
 </style>

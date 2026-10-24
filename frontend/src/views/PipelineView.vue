@@ -812,7 +812,7 @@ onBeforeUnmount(() => {
 </template>
 <style scoped>
 .builder {
-	max-width: 1300px;
+	max-width: 1440px;
 	margin: auto;
 }
 .toolbar,
@@ -836,15 +836,15 @@ h3 {
 }
 .builder-grid {
 	display: grid;
-	grid-template-columns: 180px minmax(300px, 1fr) 280px;
-	gap: 12px;
+	grid-template-columns: 210px minmax(380px, 1fr) 310px;
+	gap: 16px;
 	align-items: stretch;
 	margin: 18px 0;
 }
 .panel {
-	background: white;
-	border: 1px solid #dbe4e9;
-	border-radius: 10px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 12px;
 	padding: 16px;
 	min-width: 0;
 }
@@ -852,21 +852,21 @@ h3 {
 	display: grid;
 	width: 100%;
 	text-align: left;
-	background: #e8f3f1;
-	color: #164e49;
+	background: #1a3152;
+	color: var(--text);
 	margin: 8px 0;
 	gap: 4px;
 }
 small {
 	font-weight: 400;
-	color: #526c6a;
+	color: var(--muted);
 }
 .canvas-wrap {
 	position: relative;
 	height: 560px;
-	background: #f1f5f9;
-	border: 1px solid #dbe4e9;
-	border-radius: 10px;
+	background: #0b1424;
+	border: 1px solid var(--border);
+	border-radius: 12px;
 	overflow: hidden;
 }
 .canvas-empty {
@@ -875,7 +875,7 @@ small {
 	left: 10%;
 	right: 10%;
 	text-align: center;
-	color: #64748b;
+	color: var(--muted);
 	pointer-events: none;
 }
 .settings {
@@ -897,11 +897,6 @@ fieldset label,
 }
 select {
 	width: 100%;
-	padding: 9px;
-	border: 1px solid #94a3b8;
-	border-radius: 6px;
-	background: white;
-	font: inherit;
 }
 .inline {
 	display: flex;
@@ -909,24 +904,24 @@ select {
 	font-weight: 400;
 }
 .mapping {
-	border-bottom: 1px solid #e2e8f0;
+	border-bottom: 1px solid var(--border);
 	padding-bottom: 12px;
 }
 .secondary {
-	background: #e2e8f0;
-	color: #334155;
+	background: #243652;
+	color: var(--text);
 }
 .danger {
-	background: #9f3434;
+	background: #be3854;
 }
 .notice {
 	padding: 12px;
-	background: #f1f5f9;
+	background: #182943;
 	border-radius: 6px;
 	overflow-wrap: anywhere;
 }
 .error {
-	background: #fff1f2;
+	background: #3a1d2a;
 }
 .connections {
 	margin-bottom: 30px;
@@ -946,7 +941,7 @@ select {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
-	outline: 3px solid #38bdf8;
+	outline: 3px solid var(--link);
 	outline-offset: 2px;
 }
 @media (max-width: 900px) {
@@ -959,5 +954,21 @@ select:focus-visible {
 	.settings {
 		max-height: none;
 	}
+}
+:deep(.vue-flow__node) {
+	background: #162641;
+	color: var(--text);
+	border: 1px solid #5276a6;
+	border-radius: 9px;
+	box-shadow: 0 8px 22px rgb(0 0 0 / 0.28);
+}
+:deep(.vue-flow__node.selected) {
+	box-shadow:
+		0 0 0 2px var(--primary),
+		0 8px 22px rgb(0 0 0 / 0.28);
+}
+:deep(.vue-flow__edge-path) {
+	stroke: #7dd3fc;
+	stroke-width: 2;
 }
 </style>

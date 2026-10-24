@@ -159,15 +159,8 @@ h1 {
 	margin-bottom: 4px;
 }
 .secondary {
-	background: #e2e8f0;
-	color: #334155;
-}
-select {
-	padding: 9px;
-	border: 1px solid #94a3b8;
-	border-radius: 6px;
-	background: white;
-	font: inherit;
+	background: #243652;
+	color: var(--text);
 }
 .history {
 	list-style: none;
@@ -179,15 +172,15 @@ select {
 .history li {
 	display: grid;
 	gap: 3px;
-	border-bottom: 1px solid #e2e8f0;
+	border-bottom: 1px solid var(--border);
 	padding-bottom: 10px;
 }
 .history span {
-	color: #64748b;
+	color: var(--muted);
 	font-size: 0.9rem;
 }
 .history .error {
-	color: #b91c1c;
+	color: var(--danger);
 }
 .pagination {
 	display: flex;
@@ -195,6 +188,6 @@ select {
 	gap: 10px;
 }
 .pagination span {
-	color: #64748b;
+	color: var(--muted);
 }
 </style>

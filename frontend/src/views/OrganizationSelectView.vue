@@ -32,6 +32,6 @@ const auth = useAuthStore()
 	text-decoration: none;
 }
 .organization:hover {
-	border-color: #0f766e;
+	border-color: var(--primary);
 }
 </style>
