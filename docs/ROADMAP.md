@@ -7,7 +7,7 @@
 | M0 — окружение | Каркас Laravel/Vue/worker, Compose, README | Чистая установка и health checks, сборки |
 | M1 — foundation | Auth, personal organization, membership, projects | Проект создаётся через UI, чужая организация недоступна |
 | M2 — pipeline core | Pipelines, nodes, edges, registry, validation, visual builder | CSV граф сохраняется и переживает reload |
-| M3 — execution core | Executions, snapshot, outbox, Redis, Node worker, logs, CSV/filter/map | Ожидаемый CSV результата, статусы, обработка worker loss |
+| M3 — execution core | **Готово для первого среза:** Executions, snapshot, outbox, Redis, Node worker, CSV/filter/map | Ожидаемый CSV результата, статусы, обработка worker loss |
 | M4 — data model + connectors MVP | Dataset abstraction, basic schema, field mapping, simple schema propagation, PostgreSQL/MySQL/REST/JSON, Cast, fan-out, приглашения/роли | Все критерии MVP_SCOPE пройдены |
 | v1 — operational features | Scheduling, bounded retries, batching, Sort/Group, audit, realtime по потребности, execution metrics | Повторяемые фоновые запуски и восстановление подтверждены тестами |
 | v2 — advanced data features | Join/Aggregate, Data Quality, Deduplicate, schema inference/evolution, несколько sources, Condition, webhooks, Google интеграции | Определены join semantics, invalid records и частичные ошибки |

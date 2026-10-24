@@ -9,6 +9,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 class DatabaseSeeder extends Seeder
@@ -45,11 +46,13 @@ class DatabaseSeeder extends Seeder
                 $this->assignRole($organization, $admin, 'owner');
             }
 
-            $roleOrganization = $organizations->first();
+            $roleOrganization = Organization::where('name', 'DataFlow Demo Organization')->firstOrFail();
 
             foreach ($roleUsers as $role => $user) {
                 $this->assignRole($roleOrganization, $user, $role);
             }
+
+            $this->createDemoWorkflow($roleOrganization);
         });
     }
 
@@ -67,5 +70,55 @@ class DatabaseSeeder extends Seeder
             ['organization_id' => $organization->id, 'user_id' => $user->id],
             ['role' => $role],
         );
+    }
+
+    private function createDemoWorkflow(Organization $organization): void
+    {
+        $contents = file_get_contents(base_path('../demo/paid-orders.csv'));
+        if ($contents === false) {
+            throw new RuntimeException('Demo CSV is missing.');
+        }
+        $disk = Storage::disk('local');
+        $key = 'assets/demo-paid-orders-v1.csv';
+        $digest = hash('sha256', $contents);
+        if ($disk->exists($key) && hash('sha256', $disk->get($key)) !== $digest) {
+            throw new RuntimeException('Demo CSV storage key has unexpected contents.');
+        }
+        if (! $disk->exists($key)) {
+            $disk->makeDirectory('assets');
+            $disk->put($key, $contents);
+        }
+        $asset = \App\Models\FileAsset::firstOrCreate(
+            ['storage_key' => $key],
+            ['organization_id' => $organization->id, 'original_name' => 'paid-orders.csv', 'size_bytes' => strlen($contents), 'sha256' => $digest, 'state' => 'ready'],
+        );
+        if ($asset->organization_id !== $organization->id || $asset->sha256 !== $digest || $asset->state !== 'ready') {
+            throw new RuntimeException('Demo CSV asset has unexpected metadata.');
+        }
+        $project = $organization->projects()->firstOrCreate(
+            ['name' => 'Демонстрация DataFlow'],
+            ['description' => 'CSV → Filter → Map → CSV'],
+        );
+        $pipeline = $organization->pipelines()->firstOrCreate(
+            ['project_id' => $project->id, 'name' => 'Платные заказы'],
+            ['revision' => 0, 'schema_version' => 1],
+        );
+        if ($pipeline->nodes()->exists() || $pipeline->edges()->exists()) {
+            return;
+        }
+        $nodes = [
+            ['node_id' => 'source', 'type' => 'csv.source', 'type_version' => 1, 'position' => ['x' => 0, 'y' => 0], 'config' => ['asset_id' => (string) $asset->id, 'delimiter' => ',', 'header' => true], 'schema_hints' => [['name' => 'order_id', 'type' => 'string', 'nullable' => false], ['name' => 'status', 'type' => 'string', 'nullable' => false], ['name' => 'total', 'type' => 'string', 'nullable' => false]]],
+            ['node_id' => 'filter', 'type' => 'transform.filter', 'type_version' => 1, 'position' => ['x' => 240, 'y' => 0], 'config' => ['field' => 'status', 'operator' => 'equals', 'value' => 'paid']],
+            ['node_id' => 'map', 'type' => 'transform.map', 'type_version' => 1, 'position' => ['x' => 480, 'y' => 0], 'config' => ['mappings' => [['source' => 'order_id', 'target' => 'id'], ['source' => 'total', 'target' => 'amount']]]],
+            ['node_id' => 'output', 'type' => 'csv.destination', 'type_version' => 1, 'position' => ['x' => 720, 'y' => 0], 'config' => ['filename' => 'paid-orders.csv']],
+        ];
+        foreach ($nodes as $node) {
+            $pipeline->nodes()->create($node);
+        }
+        foreach ([['e1', 'source', 'filter'], ['e2', 'filter', 'map'], ['e3', 'map', 'output']] as [$edge, $source, $target]) {
+            $pipeline->edges()->create(['edge_id' => $edge, 'source_node_id' => $source, 'source_port' => 'records', 'target_node_id' => $target, 'target_port' => 'records']);
+        }
+        $pipeline->revision = 1;
+        $pipeline->save();
     }
 }

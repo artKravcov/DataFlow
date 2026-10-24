@@ -37,8 +37,8 @@ CSV upload → Filter → Map/Rename → CSV download
 | P3 — assets | T07 | CSV upload сохраняет metadata и файл с лимитом; чужой asset нельзя прочитать или скачать |
 | P4 — execution state | T08 | Run создаёт immutable snapshot, outbox и queued Execution; есть idempotency и один активный запуск |
 | P5 — worker runtime | T09 | Redis доставляет задание Node worker; CSV реально фильтруется и преобразуется; output asset и статусы сохраняются |
-| P6 — acceptance UI | T10 | UI показывает queued/running/succeeded/failed, скачивает результат и объясняет ошибку неверного поля |
-| P7 — сдача | README и видео | Чистый локальный запуск описан; есть demo CSV и сценарий видео на 2–3 минуты |
+| P6 — acceptance UI | T10 | **Готово:** UI показывает queued/running/succeeded/failed, скачивает результат и объясняет ошибку неверного поля |
+| P7 — сдача | README и видео | **Готово для локального показа:** описан чистый запуск, есть demo CSV и сценарий видео на 2–3 минуты; внешние ссылки добавляются при публикации |
 
 ## Обязательные инварианты даже в прототипе
 

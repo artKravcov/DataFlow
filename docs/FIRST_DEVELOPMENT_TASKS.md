@@ -1,6 +1,6 @@
 # Первые задачи разработки
 
-Статусы ниже отражают фактическое состояние на 4 октября 2026 года. Номера T обозначают небольшие единицы; prompts могут охватывать несколько связанных T. Завершённой считается только задача с указанной фактической проверкой.
+Статусы ниже отражают фактическое состояние на 24 октября 2026 года. Номера T обозначают небольшие единицы; prompts могут охватывать несколько связанных T. Завершённой считается только задача с указанной фактической проверкой.
 
 | ID | Задача | Статус | Зависит от | Проверяемый результат |
 |---|---|---|---|---|
@@ -10,10 +10,10 @@
 | T04 | Frontend auth/projects | Готово | T03 | Пользователь создаёт проект через браузер |
 | T05 | Pipeline models + registry + graph API + Dataset/Schema contract | Выполнена (assets/runtime — далее) | T03 | Revision, cycle validation, неизвестные типы отвергаются; fixtures описывают Dataset v1 |
 | T06 | Визуальный schema-aware редактор | Выполнена | T04,T05 | Собрать и сохранить CSV граф без JSON/code input; Filter/Map используют поля schema, если она известна |
-| T07 | FileAsset upload/download | Не начато | T03 | CSV загружается с лимитом, чужой файл недоступен |
-| T08 | Execution snapshot + outbox + internal API | Не начато | T05,T07 | Атомарное создание, idempotency, claim/events/lease tests |
-| T09 | Redis dispatcher + Node Dataset runtime | Не начато | T08 | Реальная доставка, CSV/filter/map, schema propagation, failed recovery |
-| T10 | Execution UI и сквозная приёмка | Не начато | T06,T09 | Скачать ожидаемый CSV и понять ошибку неверного поля |
+| T07 | FileAsset upload/download | Готово | T03 | CSV загружается с лимитом, чужой файл недоступен |
+| T08 | Execution snapshot + outbox + internal API | Готово | T05,T07 | Атомарное создание, idempotency, claim/events/lease tests |
+| T09 | Redis dispatcher + Node Dataset runtime | Готово | T08 | Реальная доставка, CSV/filter/map, schema propagation, failed recovery |
+| T10 | Execution UI и сквозная приёмка | Готово | T06,T09 | Скачать ожидаемый CSV и понять ошибку неверного поля |
 
 Фактические результаты T01–T04 и выполненные проверки перечислены в [PROJECT_CONTEXT](../PROJECT_CONTEXT.md). Трекер прототипа для курсовой работы находится в [PROTOTYPE_PLAN](PROTOTYPE_PLAN.md). T05–T10 составляют первый вертикальный срез; завершать M4 для сдачи прототипа не требуется.
 

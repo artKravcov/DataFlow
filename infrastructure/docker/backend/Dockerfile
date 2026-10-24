@@ -23,6 +23,7 @@ RUN composer install --no-interaction --prefer-dist --no-progress --no-scripts
 
 COPY backend/ ./
 COPY contracts/ /var/www/contracts/
+COPY demo/ /var/www/demo/
 RUN touch .env
 RUN composer dump-autoload --no-interaction --optimize
 
