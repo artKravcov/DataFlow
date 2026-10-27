@@ -84,7 +84,7 @@ id,amount
 
 ### 2:40-3:00 - показать данные в pgAdmin
 
-Откройте pgAdmin уже после завершения запуска. Достаточно раскрыть базу `dataflow`, схему `public` и показать данные через **View/Edit Data -> All Rows** в трёх таблицах:
+Откройте pgAdmin уже после завершения запуска. Настройка сервера и точные параметры подключения находятся в [PGADMIN_VIDEO_SETUP](PGADMIN_VIDEO_SETUP.md). Достаточно раскрыть базу `dataflow`, схему `public` и показать данные через **View/Edit Data -> All Rows** в трёх таблицах:
 
 1. `pipelines` - видны сохранённый поток `Paid orders` и его revision.
 2. `executions` - видна только что созданная запись со статусом `succeeded`.

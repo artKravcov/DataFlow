@@ -59,7 +59,9 @@ docker compose up --build --wait
 docker compose exec backend php artisan migrate --force
 ```
 
-Откройте frontend по `http://localhost:8080`. Gateway — единственный опубликованный сервис: PostgreSQL, Redis и backend доступны только во внутренней Compose-сети.
+Откройте frontend по `http://localhost:8080`. Gateway доступен на локальном HTTP-порту; Redis и backend остаются только во внутренней Compose-сети.
+
+Для записи демонстрации PostgreSQL дополнительно доступен только на `127.0.0.1:5433`, чтобы его можно было открыть в desktop pgAdmin. Параметры подключения и безопасные запросы находятся в [гайде pgAdmin](docs/PGADMIN_VIDEO_SETUP.md).
 
 Проверки:
 
