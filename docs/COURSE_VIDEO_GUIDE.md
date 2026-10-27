@@ -1,25 +1,27 @@
-# DataFlow: what to record for the course assignment
+# DataFlow: что снимать для курсового задания
 
-This guide is for the stated course criterion: show a small prototype with 2-3 working sections where data is genuinely read, processed, and persisted. The recording should focus on the product's central CSV pipeline, not on authorization or Docker details.
+Это сценарий немого видео на 3-4 минуты. Ничего говорить не нужно: запись показывает действия в интерфейсе, а при желании поверх кадров можно добавить короткие русские титры из этого документа.
 
-## What the recording proves
+Цель ролика - доказать три работающие части центральной функции DataFlow: граф сохраняется, реальные данные обрабатываются, а результат сохраняется и доступен пользователю.
 
-| Part to show | What actually happens | Where the result is persisted |
+## Что доказывает видео
+
+| Часть | Что происходит на самом деле | Где сохраняется результат |
 |---|---|---|
-| 1. Pipeline editor | A saved graph connects CSV source, Filter, Map/Rename, and CSV destination. | PostgreSQL stores the pipeline, nodes, edges, configuration, and revision. |
-| 2. Pipeline execution | The worker reads the actual input CSV, removes non-paid orders, and renames fields. | PostgreSQL stores Execution and per-node statuses; the worker produces the output content. |
-| 3. Result and history | The finished CSV is downloadable and the completed run is visible in history. | The output CSV is a private file asset; its metadata and execution history are stored in PostgreSQL. |
+| 1. Редактор потока | Пользователь видит и сохраняет граф из CSV источника, Filter, Map/Rename и CSV результата. | PostgreSQL хранит pipeline, узлы, связи, настройки и revision. |
+| 2. Выполнение | Worker читает настоящий CSV, исключает неоплаченные заказы и переименовывает поля. | PostgreSQL хранит Execution и статусы каждого узла. |
+| 3. Результат и история | Созданный CSV можно скачать, а завершённый запуск появляется в истории. | Выходной CSV сохраняется как приватный файл, а metadata и история - в PostgreSQL. |
 
-These are three parts of the main functionality. Login is useful to enter the application but is not presented as one of the required functional sections.
+Авторизацию в ролике можно показать только как вход в приложение. Она не считается одной из трёх основных частей.
 
-## Before recording
+## Подготовка до записи
 
-1. Follow [VIDEO_DEMO_GUIDE](VIDEO_DEMO_GUIDE.md) through the preparation section.
-2. Run one trial execution to ensure that worker and queue-manager are active.
-3. Start the recording in the browser at `http://localhost:8080`, logged in as `demo-owner@dataflow.local`.
-4. Do not record `.env`, terminal output containing secrets, passwords, or service tokens.
+1. Выполните подготовку из [VIDEO_DEMO_GUIDE](VIDEO_DEMO_GUIDE.md).
+2. До записи один раз запустите demo-поток, чтобы убедиться, что worker и queue-manager работают.
+3. Откройте `http://localhost:8080` и войдите под `demo-owner@dataflow.local`.
+4. Не показывайте `.env`, пароль, служебный токен и терминал с секретами.
 
-Use the ready demo data:
+Входные данные demo-потока:
 
 ```csv
 order_id,status,total
@@ -28,7 +30,7 @@ order_id,status,total
 103,paid,20.00
 ```
 
-Expected result:
+Ожидаемый файл-результат:
 
 ```csv
 id,amount
@@ -36,73 +38,77 @@ id,amount
 103,20.00
 ```
 
-## Recording plan: 4 minutes
+## Сценарий записи без речи
 
-### 0:00-0:20 - purpose
+### 0:00-0:15 - открыть готовый пример
 
-Open **DataFlow Demo Organization** -> **Demonstration DataFlow** -> **Paid orders**.
+На экране выбора организаций нажмите **DataFlow Demo Organization**, затем откройте проект **Демонстрация DataFlow** и поток **Платные заказы**.
 
-Say in Latvian:
+Необязательный титр:
 
-> DataFlow ir vizuāla datu plūsmu platforma. Šajā prototipā bez programmēšanas apstrādāju pasūtījumu CSV failu: atlasu tikai apmaksātos pasūtījumus un izveidoju jaunu rezultāta failu.
+> DataFlow: визуальная обработка данных без кода
 
-### 0:20-1:20 - section 1: saved visual pipeline
+### 0:15-1:00 - показать сохранённый граф
 
-Show the four connected blocks in the editor. Click each block and briefly show its settings:
+1. Покажите все четыре соединённых блока на схеме.
+2. Нажмите последовательно на CSV источник, фильтр, сопоставление и CSV результат, чтобы были видны настройки справа.
+3. Покажите: `status` = `paid`, а также переименование `order_id` -> `id` и `total` -> `amount`.
+4. Нажмите **Сохранить** и обновите страницу браузера.
+5. После обновления покажите, что блоки, связи и настройки остались.
 
-1. CSV source uses `paid-orders.csv`.
-2. Filter keeps records where `status equals paid`.
-3. Map/Rename maps `order_id` to `id` and `total` to `amount`.
-4. CSV destination creates `paid-orders.csv`.
+Необязательный титр:
 
-Click **Save**, then reload the browser page. Show that the nodes, connections, and settings remain. This proves that the graph was saved, not merely drawn in the browser.
+> 1. Граф и настройки сохраняются в базе данных
 
-Say:
+### 1:00-2:05 - показать реальную обработку
 
-> Pirmā galvenā daļa ir pipeline redaktors. Shēma un katra mezgla konfigurācija tiek saglabāta datubāzē ar versiju, tāpēc pēc lapas pārlādes tā paliek nemainīga.
+1. Нажмите **Запустить**.
+2. В панели **Запуски** покажите статус «В очереди», затем «Выполняется» и «Завершён».
+3. В завершённом запуске покажите статусы четырёх узлов: источник, фильтр, сопоставление, результат.
 
-### 1:20-2:35 - section 2: actual data processing
+Если переход между статусами произошёл слишком быстро, просто покажите завершённое выполнение и статусы всех узлов. Это достаточно доказывает, что pipeline был реально выполнен.
 
-Click **Run**. In the execution panel, show the statuses changing from queued to running and then succeeded. If the transition is too fast, use the execution panel to show the completed node statuses.
+Необязательный титр:
 
-Say:
+> 2. Worker читает CSV, фильтрует строки и преобразует поля
 
-> Otrā galvenā daļa ir izpilde. Sistēma nolasa reālu CSV failu, worker process pielieto filtru un lauku pārsaukšanu, bet katra mezgla statuss tiek saglabāts izpildes vēsturē. Lietotāja saskarne tikai parāda saglabāto stāvokli.
+### 2:05-2:40 - показать сохранённый результат
 
-Optional technical sentence, only if asked:
+1. Нажмите ссылку **Скачать paid-orders.csv** у завершённого запуска.
+2. Откройте скачанный файл в текстовом редакторе или таблице.
+3. Покажите две строки результата и заголовок `id,amount`.
 
-> API glabā izpildes momentuzņēmumu un stāvokļus PostgreSQL datubāzē, Redis piegādā uzdevumu worker procesam, un Node.js worker neveic tiešas izmaiņas datubāzē.
+Необязательный титр:
 
-### 2:35-3:20 - section 3: persisted output
+> 3. Результат сохранён отдельным CSV-файлом
 
-Click the download link for the finished result. Open the downloaded CSV and show the two rows and columns `id,amount`.
+### 2:40-3:10 - показать историю
 
-Say:
+1. Откройте пункт **Обзор**.
+2. Выберите фильтр **Завершён**.
+3. Покажите созданный запуск в общей истории.
+4. Нажмите на него, чтобы вернуться к соответствующему потоку.
 
-> Trešā galvenā daļa ir rezultāta saglabāšana. Rezultāta CSV fails ir izveidots no apstrādātajiem datiem un tiek glabāts kā privāts artefakts. No trim ievades rindām filtrs atstāja divus apmaksātus pasūtījumus.
+Необязательный титр:
 
-### 3:20-3:45 - execution history
+> История запусков и статусы сохраняются для организации
 
-Open **Overview**, select the succeeded status filter, and show the run in history. Open it back in the pipeline if desired.
+### 3:10-3:20 - финальный кадр
 
-Say:
+Оставьте на экране результат CSV или завершённый запуск. При желании добавьте титр:
 
-> Izpildes vēsture ļauj redzēt, kurš pipeline tika palaists, tā statusu un rezultātu. Dati ir piesaistīti organizācijai, tādēļ citas organizācijas lietotājs tos neredz.
+> CSV -> Filter -> Map/Rename -> CSV: данные прочитаны, обработаны и сохранены
 
-### 3:45-4:00 - closing sentence
+## Чего не нужно показывать и обещать
 
-> Prototips realizē prasību galveno CSV scenāriju: vizuāli saglabāt plūsmu, nolasīt un apstrādāt reālus datus, saglabāt rezultātu un apskatīt izpildes statusu. Nākamajā posmā var pievienot JSON, REST un datubāzu savienotājus.
+Не заявляйте, что уже готовы REST, JSON, PostgreSQL/MySQL-коннекторы, расписания, приглашения участников, fan-out и структурированные логи. Это есть в расширенной документации, но не входит в текущий компактный CSV-прототип.
 
-## What not to claim
+## Важное расхождение перед сдачей
 
-Do not state that REST, JSON, PostgreSQL/MySQL connectors, scheduled runs, invitations, member management, fan-out, or structured execution logs are finished. They are in the broader requirements and design, but not in this compact CSV prototype.
+В спецификации указано, что язык интерфейса должен быть латышским. Сейчас в прототипе видимые подписи русские. Главный CSV-сценарий соответствует документации, но перед финальной сдачей интерфейс желательно перевести на латышский, если преподаватель строго проверяет это нефункциональное требование.
 
-## Documented difference to resolve before submission
+## Ссылка на код
 
-The requirements specification states that the interface language should be Latvian. The current prototype interface is Russian. Its main CSV behaviour matches the documented first scenario, but the visible labels should be translated to Latvian before final submission if strict compliance with the non-functional requirement is expected.
+Репозиторий: [github.com/artKravcov/DataFlow](https://github.com/artKravcov/DataFlow)
 
-## GitHub link to include with the submission
-
-Repository: [github.com/artKravcov/DataFlow](https://github.com/artKravcov/DataFlow)
-
-Before submitting, confirm that the latest local commits have been pushed to `origin/main`. The repository must include the source code, Docker Compose configuration, `README.md`, the requirements specification, the system design, and this recording guide.
+В репозитории уже находятся исходный код, Docker Compose, README, требования, системное проектирование и этот сценарий видео.
