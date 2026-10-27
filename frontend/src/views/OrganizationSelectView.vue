@@ -5,9 +5,9 @@ const auth = useAuthStore()
 </script>
 <template>
 	<main class="page">
-		<h1>Выберите организацию</h1>
-		<p class="muted">Организация определяет границы доступа к проектам и будущим данным.</p>
-		<p v-if="!auth.user" class="muted">Загрузка…</p>
+		<h1>Choose an organization</h1>
+		<p class="muted">An organization defines access boundaries for projects and data.</p>
+		<p v-if="!auth.user" class="muted">Loading…</p>
 		<section v-else-if="auth.user.organizations.length" class="stack">
 			<RouterLink
 				v-for="organization in auth.user.organizations"
@@ -19,8 +19,8 @@ const auth = useAuthStore()
 			>
 		</section>
 		<section v-else class="card">
-			<h2>Нет доступных организаций</h2>
-			<p>Создание и приглашения появятся в следующем этапе управления организациями.</p>
+			<h2>No organizations available</h2>
+			<p>Creation and invitations will be added in the next organization-management stage.</p>
 		</section>
 	</main>
 </template>

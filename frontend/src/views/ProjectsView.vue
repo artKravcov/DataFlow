@@ -28,8 +28,8 @@ async function load(): Promise<void> {
 	} catch (reason) {
 		error.value =
 			reason instanceof ApiError && reason.status === 403
-				? 'Ваша роль позволяет только просмотр проектов.'
-				: 'Не удалось загрузить проекты.'
+				? 'Your role only allows viewing projects.'
+				: 'Could not load projects.'
 	} finally {
 		loading.value = false
 	}
@@ -49,7 +49,7 @@ async function create(input: ProjectInput): Promise<void> {
 		if (reason instanceof ApiError) {
 			fields.value = reason.fields
 			error.value = reason.message
-		} else error.value = 'Не удалось создать проект.'
+		} else error.value = 'Could not create project.'
 	} finally {
 		creating.value = false
 	}
@@ -61,35 +61,35 @@ watch(organizationId, load)
 	<section class="page">
 		<div class="row spread">
 			<div>
-				<h1>Проекты</h1>
-				<p class="muted">Проекты выбранной организации.</p>
+				<h1>Projects</h1>
+				<p class="muted">Projects in the selected organization.</p>
 			</div>
 			<button v-if="canEdit" @click="showCreate = !showCreate">
-				{{ showCreate ? 'Отменить' : 'Новый проект' }}
+				{{ showCreate ? 'Cancel' : 'New project' }}
 			</button>
 		</div>
 		<section v-if="showCreate" class="card">
-			<h2>Новый проект</h2>
+			<h2>New project</h2>
 			<ProjectForm
 				:model-value="{ name: '', description: null }"
 				:fields="fields"
 				:submitting="creating"
-				submit-label="Создать проект"
+				submit-label="Create project"
 				@submit="create"
 			/>
 		</section>
-		<p v-if="loading" class="muted">Загрузка проектов…</p>
+		<p v-if="loading" class="muted">Loading projects…</p>
 		<section v-else-if="error" class="card">
 			<p class="error">{{ error }}</p>
-			<button @click="load">Повторить</button>
+			<button @click="load">Retry</button>
 		</section>
 		<section v-else-if="!projects.length" class="card">
-			<h2>Проектов пока нет</h2>
+			<h2>No projects yet</h2>
 			<p>
 				{{
 					canEdit
-						? 'Создайте первый проект, чтобы позже собрать в нём pipeline.'
-						: 'Ваша роль разрешает просмотр, но в организации ещё нет доступных проектов.'
+						? 'Create your first project to build a pipeline in it.'
+						: 'Your role allows viewing, but there are no accessible projects in this organization yet.'
 				}}
 			</p>
 		</section>
@@ -103,7 +103,9 @@ watch(organizationId, load)
 					params: { org: organizationId, project: project.id },
 				}"
 				><strong>{{ project.name }}</strong
-				><span class="muted">{{ project.description || 'Без описания' }}</span></RouterLink
+				><span class="muted">{{
+					project.description || 'No description'
+				}}</span></RouterLink
 			>
 		</section>
 	</section>

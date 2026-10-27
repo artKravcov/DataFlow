@@ -37,18 +37,18 @@ const active = computed(() =>
 	history.value.some((item) => item.status === 'queued' || item.status === 'running'),
 )
 const statuses: Record<string, string> = {
-	queued: 'В очереди',
-	running: 'Выполняется',
-	succeeded: 'Завершён',
-	failed: 'Ошибка',
-	pending: 'Ожидает',
-	skipped: 'Пропущен',
+	queued: 'Queued',
+	running: 'Running',
+	succeeded: 'Succeeded',
+	failed: 'Failed',
+	pending: 'Pending',
+	skipped: 'Skipped',
 }
 const nodeLabels: Record<string, string> = {
-	'csv.source': 'CSV источник',
-	'transform.filter': 'Фильтр',
-	'transform.map': 'Сопоставление',
-	'csv.destination': 'CSV результат',
+	'csv.source': 'CSV source',
+	'transform.filter': 'Filter',
+	'transform.map': 'Map / Rename',
+	'csv.destination': 'CSV destination',
 }
 let generation = 0
 let refreshSequence = 0
@@ -75,15 +75,15 @@ function persistPending(value: Pending | null): void {
 function explain(reason: unknown): string {
 	if (reason instanceof ApiError) {
 		if (reason.code === 'EXECUTION_ACTIVE')
-			return 'У этого потока уже есть активный запуск. Обновите список ниже.'
+			return 'This pipeline already has an active run. Refresh the list below.'
 		if (reason.code === 'REVISION_CONFLICT')
-			return 'Версия потока изменилась. Обновите страницу перед запуском.'
+			return 'The pipeline version has changed. Refresh the page before running it.'
 		if (reason.status === 422)
-			return 'Не удалось запустить поток. Проверьте сохранённый граф и настройки блоков.'
-		if (reason.status === 403) return 'Ваша роль не позволяет запускать поток.'
-		return 'Не удалось выполнить запрос. Проверьте доступ к потоку и повторите попытку.'
+			return 'The pipeline could not be started. Check the saved graph and node settings.'
+		if (reason.status === 403) return 'Your role does not allow you to run this pipeline.'
+		return 'The request could not be completed. Check pipeline access and try again.'
 	}
-	return 'Не удалось связаться с сервером. Повторите попытку.'
+	return 'Could not reach the server. Please try again.'
 }
 async function refresh(): Promise<void> {
 	const version = generation
@@ -147,7 +147,7 @@ async function start(): Promise<void> {
 		)
 			persistPending(null)
 		error.value = pending.value
-			? 'Ответ о запуске не получен. Повторите запрос: это не создаст второй запуск.'
+			? 'The start response was not received. Retrying will not create a second run.'
 			: explain(reason)
 	} finally {
 		if (version === generation) starting.value = false
@@ -159,7 +159,7 @@ function select(id: number): void {
 }
 function nodeName(id: string): string {
 	const node = execution.value?.snapshot.graph.nodes.find((item) => item.id === id)
-	return `${nodeLabels[node?.type ?? ''] ?? 'Блок'} · ${id.slice(0, 8)}`
+	return `${nodeLabels[node?.type ?? ''] ?? 'Node'} · ${id.slice(0, 8)}`
 }
 watch(
 	() => [props.orgId, props.pipelineId, props.userId],
@@ -185,16 +185,16 @@ onBeforeUnmount(() => {
 <template>
 	<section class="execution-panel" aria-labelledby="execution-title">
 		<div class="heading">
-			<h2 id="execution-title">Запуски</h2>
+			<h2 id="execution-title">Runs</h2>
 			<button type="button" class="secondary" :disabled="loading" @click="refresh">
-				Обновить
+				Refresh
 			</button>
 		</div>
 		<p v-if="dirty" class="muted">
-			Перед запуском сохраните изменения. Запускается сохранённая версия графа.
+			Save your changes before running. The saved graph version will be used.
 		</p>
 		<p v-if="pending" class="muted">
-			Ответ на предыдущий запрос не получен. Повторите его, чтобы узнать результат.
+			The previous request did not return a response. Retry it to check the result.
 		</p>
 		<button
 			v-if="canEdit"
@@ -202,32 +202,32 @@ onBeforeUnmount(() => {
 			:disabled="starting || (!pending && (dirty || active))"
 			@click="start"
 		>
-			{{ pending ? 'Повторить запрос запуска' : 'Запустить' }}
+			{{ pending ? 'Retry start request' : 'Run' }}
 		</button>
-		<p v-if="active && !pending" class="muted">У потока уже есть активный запуск.</p>
+		<p v-if="active && !pending" class="muted">This pipeline already has an active run.</p>
 		<p v-if="error" class="error" role="alert">{{ error }}</p>
-		<p v-if="!history.length && !loading" class="muted">Запусков пока нет.</p>
+		<p v-if="!history.length && !loading" class="muted">No runs yet.</p>
 		<div v-if="history.length" class="execution-content">
 			<label
-				>Последние запуски<select
+				>Recent runs<select
 					:value="selectedId"
 					@change="select(Number(($event.target as HTMLSelectElement).value))"
 				>
 					<option v-for="item in history" :key="item.id" :value="item.id">
-						#{{ item.id }} · {{ statuses[item.status] ?? item.status }} · версия
+						#{{ item.id }} · {{ statuses[item.status] ?? item.status }} · version
 						{{ item.revision }}
 					</option>
 				</select></label
 			>
 			<div v-if="execution" aria-live="polite">
 				<p>
-					<strong>{{ statuses[execution.status] ?? execution.status }}</strong> · версия
+					<strong>{{ statuses[execution.status] ?? execution.status }}</strong> · version
 					{{ execution.revision }}
 				</p>
 				<p v-if="execution.error_code" class="error">
-					Код ошибки: {{ execution.error_code }}.
+					Error code: {{ execution.error_code }}.
 					<span v-if="execution.error_code === 'WORKER_LOST'"
-						>Результат внешних операций может быть неизвестен.</span
+						>The outcome of external operations may be unknown.</span
 					>
 				</p>
 				<ul>
@@ -238,9 +238,9 @@ onBeforeUnmount(() => {
 				</ul>
 				<p v-for="artifact in execution.artifacts" :key="artifact.asset_id">
 					<a :href="`/api/v1/organizations/${orgId}/assets/${artifact.asset_id}/download`"
-						>Скачать {{ artifact.name }}</a
+						>Download {{ artifact.name }}</a
 					>
-					· {{ artifact.size_bytes }} байт
+					· {{ artifact.size_bytes }} bytes
 				</p>
 			</div>
 		</div>

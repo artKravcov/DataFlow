@@ -47,7 +47,7 @@ async function uploadAsset(event: Event): Promise<void> {
 	} catch (reason) {
 		error.value =
 			reason instanceof ApiError && reason.status === 413
-				? 'Файл слишком большой: максимум 10 МиБ.'
+				? 'File is too large: maximum 10 MiB.'
 				: message(reason)
 	} finally {
 		input.value = ''
@@ -81,10 +81,10 @@ const dirty = computed(() => !!saved.value && JSON.stringify(graph.value) !== sa
 const url = computed(() => `/organizations/${orgId.value}/pipelines/${pipelineId.value}`)
 const definition = (type: string) => definitions.value.find((item) => item.type === type)
 const labels: Record<string, string> = {
-	'csv.source': 'CSV источник',
-	'transform.filter': 'Фильтр',
-	'transform.map': 'Сопоставление',
-	'csv.destination': 'CSV результат',
+	'csv.source': 'CSV source',
+	'transform.filter': 'Filter',
+	'transform.map': 'Map / Rename',
+	'csv.destination': 'CSV destination',
 }
 const display = (node: GraphNode) => labels[node.type] ?? definition(node.type)?.label ?? node.type
 const flowNodes = computed(() =>
@@ -155,16 +155,17 @@ function schemaFor(id: string, seen: Set<string>): SchemaField[] | null {
 function connectionError(source: string, target: string): string {
 	const a = graph.value.nodes.find((node) => node.id === source)
 	const b = graph.value.nodes.find((node) => node.id === target)
-	if (!a || !b) return 'Выберите выход и вход.'
+	if (!a || !b) return 'Choose an output and an input.'
 	const output = definition(a.type)?.outputs.records
 	const input = definition(b.type)?.inputs.records
-	if (!output || !input || output !== input) return 'Порты этих блоков несовместимы.'
-	if (graph.value.edges.some((edge) => edge.target === target)) return 'Этот вход уже занят.'
+	if (!output || !input || output !== input) return 'These node ports are incompatible.'
+	if (graph.value.edges.some((edge) => edge.target === target))
+		return 'This input is already connected.'
 	const stack = [target]
 	const visited = new Set<string>()
 	while (stack.length) {
 		const id = stack.pop()!
-		if (id === source) return 'Связь создаёт цикл.'
+		if (id === source) return 'This connection creates a cycle.'
 		if (visited.has(id)) continue
 		visited.add(id)
 		stack.push(
@@ -181,7 +182,7 @@ function connect(source: string, target: string): void {
 		return
 	}
 	if (graph.value.edges.length >= 100) {
-		error.value = 'Достигнут предел: 100 связей.'
+		error.value = 'The limit of 100 connections has been reached.'
 		return
 	}
 	graph.value.edges.push({
@@ -199,7 +200,7 @@ function onConnect(connection: Connection): void {
 function addNode(def: NodeDefinition): void {
 	if (!canEdit.value || busy.value) return
 	if (graph.value.nodes.length >= 50) {
-		error.value = 'Достигнут предел: 50 блоков.'
+		error.value = 'The limit of 50 nodes has been reached.'
 		return
 	}
 	const node: GraphNode = {
@@ -239,20 +240,20 @@ function message(reason: unknown): string {
 	if (reason instanceof ApiError) {
 		if (reason.status === 409) {
 			conflict.value = true
-			return 'Граф изменён в другом окне. Ваши изменения сохранены здесь; обновите версию после проверки.'
+			return 'The graph changed in another window. Your changes are kept here; refresh the version after reviewing.'
 		}
 		const fieldLabels: Record<string, string> = {
-			asset_id: 'CSV файл',
-			delimiter: 'разделитель',
-			header: 'заголовок',
-			field: 'поле',
-			operator: 'условие',
-			value: 'значение',
-			mappings: 'сопоставления',
-			source: 'исходное поле',
-			target: 'новое имя',
-			filename: 'имя результата',
-			schema_hints: 'структура',
+			asset_id: 'CSV file',
+			delimiter: 'delimiter',
+			header: 'header',
+			field: 'field',
+			operator: 'condition',
+			value: 'value',
+			mappings: 'mappings',
+			source: 'source field',
+			target: 'new name',
+			filename: 'result name',
+			schema_hints: 'schema',
 		}
 		const details = Object.entries(reason.fields).flatMap(([field, messages]) =>
 			messages.map((item) => {
@@ -260,24 +261,24 @@ function message(reason: unknown): string {
 				if (match) {
 					const node = graph.value.nodes[Number(match[1])]
 					const name = match[2] ?? ''
-					const title = `${node ? display(node) : 'Блок'}: ${fieldLabels[name] ?? name}`
+					const title = `${node ? display(node) : 'Node'}: ${fieldLabels[name] ?? name}`
 					if (name === 'asset_id')
-						return `${title}: выберите доступный файл этой организации.`
-					if (/required/i.test(item)) return `${title}: заполните поле.`
-					return `${title}: проверьте значение. (${item})`
+						return `${title}: choose an available file from this organization.`
+					if (/required/i.test(item)) return `${title}: fill in this field.`
+					return `${title}: check this value. (${item})`
 				}
 				return `${field}: ${item}`
 			}),
 		)
 		return details.length ? details.join(' • ') : reason.message
 	}
-	return 'Не удалось связаться с сервером. Повторите попытку.'
+	return 'Could not reach the server. Please try again.'
 }
 async function load(discard = false): Promise<void> {
 	if (
 		discard &&
 		dirty.value &&
-		!window.confirm('Отбросить несохранённые изменения и загрузить версию сервера?')
+		!window.confirm('Discard unsaved changes and load the server version?')
 	)
 		return
 	const sequence = ++loadSequence
@@ -322,7 +323,7 @@ async function save(): Promise<void> {
 		graph.value = structuredClone(item.graph)
 		saved.value = JSON.stringify(graph.value)
 		conflict.value = false
-		notices.value = ['Черновик сохранён.']
+		notices.value = ['Draft saved.']
 	} catch (reason) {
 		error.value = message(reason)
 	} finally {
@@ -332,7 +333,7 @@ async function save(): Promise<void> {
 async function validate(): Promise<void> {
 	if (!pipeline.value || busy.value) return
 	if (dirty.value) {
-		error.value = 'Сначала сохраните изменения: проверяется сохранённая версия.'
+		error.value = 'Save changes first: validation checks the saved version.'
 		return
 	}
 	busy.value = true
@@ -346,7 +347,7 @@ async function validate(): Promise<void> {
 		})
 		notices.value = result.warnings.length
 			? result.warnings
-			: ['Сохранённый граф прошёл проверку.']
+			: ['The saved graph passed validation.']
 	} catch (reason) {
 		error.value = message(reason)
 	} finally {
@@ -361,7 +362,7 @@ function beforeUnload(event: BeforeUnloadEvent): void {
 }
 function canLeave(): boolean {
 	if (busy.value) return false
-	return !dirty.value || window.confirm('Есть несохранённые изменения. Покинуть редактор?')
+	return !dirty.value || window.confirm('There are unsaved changes. Leave the editor?')
 }
 function beforeLogout(event: Event): void {
 	if (!canLeave()) event.preventDefault()
@@ -392,28 +393,27 @@ onBeforeUnmount(() => {
 
 <template>
 	<section class="builder">
-		<p v-if="loading">Загрузка редактора…</p>
+		<p v-if="loading">Loading editor…</p>
 		<template v-else-if="pipeline">
 			<RouterLink
 				:to="{ name: 'project', params: { org: orgId, project: pipeline.project_id } }"
-				>← К проекту</RouterLink
+				>← Back to project</RouterLink
 			>
 			<div class="toolbar">
 				<div>
 					<h1>{{ pipeline.name }}</h1>
 					<span class="muted"
-						>Версия {{ pipeline.revision }} ·
-						{{ dirty ? 'Есть несохранённые изменения' : 'Сохранено' }}</span
+						>Version {{ pipeline.revision }} ·
+						{{ dirty ? 'Unsaved changes' : 'Saved' }}</span
 					>
 				</div>
 				<div class="actions">
-					<button v-if="canEdit" :disabled="busy || !dirty" @click="save">
-						Сохранить</button
-					><button :disabled="busy" @click="validate">Проверить</button>
+					<button v-if="canEdit" :disabled="busy || !dirty" @click="save">Save</button
+					><button :disabled="busy" @click="validate">Validate</button>
 				</div>
 			</div>
 			<p v-if="!canEdit" class="muted">
-				Только просмотр: ваша роль не позволяет изменять граф.
+				Read-only: your role does not allow editing the graph.
 			</p>
 			<ExecutionPanel
 				:org-id="orgId"
@@ -425,12 +425,12 @@ onBeforeUnmount(() => {
 			/>
 			<div v-if="error" class="notice error" role="alert">
 				{{ error }}
-				<button v-if="conflict" @click="load(true)">Загрузить версию сервера</button>
+				<button v-if="conflict" @click="load(true)">Load server version</button>
 			</div>
 			<p v-for="notice in notices" :key="notice" class="notice" role="status">{{ notice }}</p>
 			<div class="builder-grid">
 				<aside class="panel">
-					<h2>На схеме</h2>
+					<h2>On canvas</h2>
 					<button
 						v-for="node in graph.nodes"
 						:key="node.id"
@@ -439,9 +439,9 @@ onBeforeUnmount(() => {
 					>
 						{{ display(node) }} <small>{{ node.id.slice(0, 8) }}</small>
 					</button>
-					<p v-if="!graph.nodes.length" class="muted">Блоков пока нет.</p>
-					<h2>Блоки</h2>
-					<p class="muted">Добавьте блок на схему</p>
+					<p v-if="!graph.nodes.length" class="muted">No nodes on the canvas yet.</p>
+					<h2>Nodes</h2>
+					<p class="muted">Add a node to the canvas</p>
 					<button
 						v-for="item in definitions"
 						:key="item.type"
@@ -466,7 +466,7 @@ onBeforeUnmount(() => {
 						@node-drag-stop="moved"
 					/>
 					<p v-if="!graph.nodes.length" class="canvas-empty">
-						Добавьте первый блок из каталога
+						Add the first node from the catalog
 					</p>
 				</div>
 				<aside class="panel settings">
@@ -475,7 +475,7 @@ onBeforeUnmount(() => {
 						<fieldset :disabled="!canEdit || busy">
 							<template v-if="selected.type === 'csv.source'"
 								><label
-									>CSV файл<select
+									>CSV file<select
 										:value="textConfig('asset_id')"
 										@change="
 											setConfig(
@@ -484,7 +484,7 @@ onBeforeUnmount(() => {
 											)
 										"
 									>
-										<option value="">Выберите файл</option>
+										<option value="">Choose a file</option>
 										<option
 											v-if="
 												textConfig('asset_id') &&
@@ -495,14 +495,14 @@ onBeforeUnmount(() => {
 											"
 											:value="textConfig('asset_id')"
 										>
-											Выбранный файл · {{ textConfig('asset_id') }}
+											Selected file · {{ textConfig('asset_id') }}
 										</option>
 										<option
 											v-for="asset in assets"
 											:key="asset.id"
 											:value="String(asset.id)"
 										>
-											{{ asset.name }} · {{ asset.size_bytes }} байт
+											{{ asset.name }} · {{ asset.size_bytes }} bytes
 										</option>
 									</select></label
 								>
@@ -512,25 +512,25 @@ onBeforeUnmount(() => {
 										:disabled="assetPage <= 1"
 										@click="changeAssetPage(assetPage - 1)"
 									>
-										Назад
+										Previous
 									</button>
-									Страница {{ assetPage }}
+									Page {{ assetPage }}
 									<button
 										type="button"
 										:disabled="!assetHasMore"
 										@click="changeAssetPage(assetPage + 1)"
 									>
-										Далее
+										Next
 									</button>
 								</div>
 								<label
-									>Загрузить CSV (до 10 МиБ)<input
+									>Upload CSV (up to 10 MiB)<input
 										type="file"
 										accept=".csv,text/csv"
 										@change="uploadAsset"
 								/></label>
 								<label
-									>Разделитель<select
+									>Delimiter<select
 										:value="textConfig('delimiter') || ','"
 										@change="
 											setConfig(
@@ -539,10 +539,10 @@ onBeforeUnmount(() => {
 											)
 										"
 									>
-										<option value=",">Запятая</option>
-										<option value=";">Точка с запятой</option>
-										<option value=":">Двоеточие</option>
-										<option value="|">Вертикальная черта</option>
+										<option value=",">Comma</option>
+										<option value=";">Semicolon</option>
+										<option value=":">Colon</option>
+										<option value="|">Pipe</option>
 									</select></label
 								><label class="inline"
 									><input
@@ -554,15 +554,15 @@ onBeforeUnmount(() => {
 											).checked
 										"
 									/>
-									Первая строка — заголовок</label
+									First row is a header</label
 								>
-								<p>Поля можно указать вручную.</p>
+								<p>Fields can be entered manually.</p>
 								<button
 									v-if="!selected.schema_hints"
 									type="button"
 									@click="selected.schema_hints = []"
 								>
-									Задать структуру</button
+									Define schema</button
 								><template v-else
 									><div
 										v-for="(field, index) in selected.schema_hints"
@@ -570,11 +570,11 @@ onBeforeUnmount(() => {
 										class="mapping"
 									>
 										<label
-											>Имя поля<input
+											>Field name<input
 												v-model="field.name"
 												maxlength="128" /></label
 										><label
-											>Тип<select v-model="field.type">
+											>Type<select v-model="field.type">
 												<option
 													v-for="type in [
 														'string',
@@ -595,13 +595,13 @@ onBeforeUnmount(() => {
 											</select></label
 										><label class="inline"
 											><input v-model="field.nullable" type="checkbox" />
-											Допускает пустое значение</label
+											Allows empty values</label
 										><button
 											type="button"
 											class="secondary"
 											@click="selected.schema_hints.splice(index, 1)"
 										>
-											Удалить поле
+											Remove field
 										</button>
 									</div>
 									<button
@@ -614,22 +614,22 @@ onBeforeUnmount(() => {
 											})
 										"
 									>
-										Добавить поле</button
+										Add field</button
 									><button
 										type="button"
 										class="secondary"
 										@click="delete selected.schema_hints"
 									>
-										Структура неизвестна
+										Schema unknown
 									</button></template
 								></template
 							>
 							<template v-if="selected.type === 'transform.filter'"
 								><p v-if="!selectedSchema" class="muted">
-									Структура данных пока неизвестна. Введите имя поля вручную.
+									The data schema is not known yet. Enter the field name manually.
 								</p>
 								<label
-									>Поле<select
+									>Field<select
 										v-if="selectedSchema"
 										:value="textConfig('field')"
 										@change="
@@ -639,7 +639,7 @@ onBeforeUnmount(() => {
 											)
 										"
 									>
-										<option value="">Выберите поле</option>
+										<option value="">Choose a field</option>
 										<option
 											v-for="field in selectedSchema"
 											:key="field.name"
@@ -657,7 +657,7 @@ onBeforeUnmount(() => {
 											)
 										" /></label
 								><label
-									>Условие<select
+									>Condition<select
 										:value="textConfig('operator')"
 										@change="
 											setConfig(
@@ -666,19 +666,19 @@ onBeforeUnmount(() => {
 											)
 										"
 									>
-										<option value="">Выберите условие</option>
-										<option value="equals">Равно</option>
-										<option value="not_equals">Не равно</option>
-										<option value="is_null">Пусто</option>
-										<option value="is_not_null">Не пусто</option>
-										<option value="greater_than">Больше</option>
-										<option value="less_than">Меньше</option>
+										<option value="">Choose a condition</option>
+										<option value="equals">Equals</option>
+										<option value="not_equals">Does not equal</option>
+										<option value="is_null">Is empty</option>
+										<option value="is_not_null">Is not empty</option>
+										<option value="greater_than">Greater than</option>
+										<option value="less_than">Less than</option>
 									</select></label
 								><label
 									v-if="
 										!['is_null', 'is_not_null'].includes(textConfig('operator'))
 									"
-									>Значение<input
+									>Value<input
 										:value="textConfig('value')"
 										@input="
 											setConfig(
@@ -688,13 +688,13 @@ onBeforeUnmount(() => {
 										"
 								/></label>
 								<p class="muted">
-									В первом срезе CSV значения являются строками; числовое
-									сравнение требует приведения типов.
+									In this first version, CSV values are strings; numeric
+									comparison requires type conversion.
 								</p></template
 							>
 							<template v-if="selected.type === 'transform.map'"
 								><p v-if="!selectedSchema" class="muted">
-									Структура данных пока неизвестна. Введите имена полей вручную.
+									The data schema is not known yet. Enter field names manually.
 								</p>
 								<div
 									v-for="(mapping, index) in mappings"
@@ -702,11 +702,11 @@ onBeforeUnmount(() => {
 									class="mapping"
 								>
 									<label
-										>Исходное поле<select
+										>Source field<select
 											v-if="selectedSchema"
 											v-model="mapping.source"
 										>
-											<option value="">Выберите поле</option>
+											<option value="">Choose a field</option>
 											<option
 												v-for="field in selectedSchema"
 												:key="field.name"
@@ -715,20 +715,18 @@ onBeforeUnmount(() => {
 												{{ field.name }}
 											</option></select
 										><input v-else v-model="mapping.source" /></label
-									><label>Новое имя<input v-model="mapping.target" /></label
+									><label>New name<input v-model="mapping.target" /></label
 									><button
 										type="button"
 										class="secondary"
 										@click="removeMapping(index)"
 									>
-										Удалить
+										Remove
 									</button>
 								</div>
-								<button type="button" @click="addMapping()">
-									Добавить сопоставление
-								</button>
+								<button type="button" @click="addMapping()">Add mapping</button>
 								<div v-if="outputSchema">
-									<h3>Выходные поля</h3>
+									<h3>Output fields</h3>
 									<p v-for="field in outputSchema" :key="field.name">
 										{{ field.name }} · {{ field.type }}
 									</p>
@@ -736,7 +734,7 @@ onBeforeUnmount(() => {
 							>
 							<template v-if="selected.type === 'csv.destination'"
 								><label
-									>Имя результата<input
+									>Result filename<input
 										:value="textConfig('filename')"
 										placeholder="result.csv"
 										@input="
@@ -747,20 +745,20 @@ onBeforeUnmount(() => {
 										" /></label
 							></template>
 							<button type="button" class="danger" @click="removeNode">
-								Удалить блок
+								Remove node
 							</button>
 						</fieldset></template
 					>
-					<p v-else class="muted">Выберите блок на схеме, чтобы настроить его.</p>
+					<p v-else class="muted">Select a node on the canvas to configure it.</p>
 				</aside>
 			</div>
 			<section class="panel connections">
-				<h2>Связи</h2>
-				<p class="muted">Для соединения без перетаскивания выберите выход и вход.</p>
+				<h2>Connections</h2>
+				<p class="muted">To connect without dragging, choose an output and an input.</p>
 				<div class="connection-form">
 					<label
-						>Выход<select v-model="from" :disabled="!canEdit || busy">
-							<option value="">Выберите блок</option>
+						>Output<select v-model="from" :disabled="!canEdit || busy">
+							<option value="">Choose a node</option>
 							<option
 								v-for="node in graph.nodes.filter(
 									(n) => definition(n.type)?.outputs.records,
@@ -772,8 +770,8 @@ onBeforeUnmount(() => {
 							</option>
 						</select></label
 					><label
-						>Вход<select v-model="to" :disabled="!canEdit || busy">
-							<option value="">Выберите блок</option>
+						>Input<select v-model="to" :disabled="!canEdit || busy">
+							<option value="">Choose a node</option>
 							<option
 								v-for="node in graph.nodes.filter(
 									(n) => definition(n.type)?.inputs.records,
@@ -785,7 +783,7 @@ onBeforeUnmount(() => {
 							</option>
 						</select></label
 					><button :disabled="!canEdit || busy" @click="connect(from, to)">
-						Соединить
+						Connect
 					</button>
 				</div>
 				<ul>
@@ -798,15 +796,15 @@ onBeforeUnmount(() => {
 							:disabled="busy"
 							@click="graph.edges = graph.edges.filter((e) => e.id !== edge.id)"
 						>
-							Удалить связь
+							Remove connection
 						</button>
 					</li>
 				</ul>
 			</section>
 		</template>
 		<div v-else class="panel">
-			<p class="error">{{ error || 'Поток недоступен.' }}</p>
-			<button @click="load()">Повторить</button>
+			<p class="error">{{ error || 'Pipeline is unavailable.' }}</p>
+			<button @click="load()">Retry</button>
 		</div>
 	</section>
 </template>

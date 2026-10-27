@@ -26,15 +26,15 @@ async function logout(): Promise<void> {
 			<RouterLink class="brand" :to="{ name: 'organizations' }">DataFlow</RouterLink>
 			<nav v-if="organization">
 				<RouterLink :to="{ name: 'overview', params: { org: organization.id } }"
-					>Обзор</RouterLink
+					>Overview</RouterLink
 				>
 				<RouterLink :to="{ name: 'projects', params: { org: organization.id } }"
-					>Проекты</RouterLink
+					>Projects</RouterLink
 				>
 			</nav>
 			<div class="account">
 				<span>{{ organization?.name }} · {{ organization?.role }}</span
-				><button class="link" @click="logout">Выйти</button>
+				><button class="link" @click="logout">Sign out</button>
 			</div>
 		</header>
 		<RouterView />

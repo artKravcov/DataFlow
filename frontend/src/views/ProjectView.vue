@@ -29,7 +29,7 @@ async function loadPipelines(): Promise<void> {
 		} while (batch.length === 25)
 		if (sequence === pipelineLoadSequence) pipelines.value = items
 	} catch {
-		if (sequence === pipelineLoadSequence) pipelineError.value = 'Не удалось загрузить потоки.'
+		if (sequence === pipelineLoadSequence) pipelineError.value = 'Could not load pipelines.'
 	} finally {
 		if (sequence === pipelineLoadSequence) pipelineLoading.value = false
 	}
@@ -46,7 +46,7 @@ async function createPipeline(): Promise<void> {
 		pipelines.value.unshift(p)
 		pipelineName.value = ''
 	} catch {
-		pipelineError.value = 'Не удалось создать поток.'
+		pipelineError.value = 'Could not create pipeline.'
 	} finally {
 		pipelineCreating.value = false
 	}
@@ -76,8 +76,8 @@ async function load(): Promise<void> {
 	} catch (reason) {
 		error.value =
 			reason instanceof ApiError && reason.status === 404
-				? 'Проект не найден или недоступен.'
-				: 'Не удалось загрузить проект.'
+				? 'Project was not found or is unavailable.'
+				: 'Could not load project.'
 	} finally {
 		loading.value = false
 	}
@@ -96,7 +96,7 @@ async function save(input: ProjectInput): Promise<void> {
 		if (reason instanceof ApiError) {
 			fields.value = reason.fields
 			error.value = reason.message
-		} else error.value = 'Не удалось сохранить изменения.'
+		} else error.value = 'Could not save changes.'
 	} finally {
 		saving.value = false
 	}
@@ -113,31 +113,31 @@ watch([organizationId, projectId], () => {
 <template>
 	<section class="page">
 		<RouterLink :to="{ name: 'projects', params: { org: organizationId } }"
-			>← К проектам</RouterLink
+			>← Back to projects</RouterLink
 		>
-		<p v-if="loading" class="muted">Загрузка проекта…</p>
+		<p v-if="loading" class="muted">Loading project…</p>
 		<section v-else-if="error && !project" class="card">
 			<p class="error">{{ error }}</p>
-			<button @click="load">Повторить</button>
+			<button @click="load">Retry</button>
 		</section>
 		<section v-else-if="project" class="stack">
 			<div>
 				<h1>{{ project.name }}</h1>
-				<p class="muted">Потоки проекта и их настройки.</p>
+				<p class="muted">Project pipelines and their settings.</p>
 			</div>
 			<section class="card stack">
-				<h2>Потоки</h2>
+				<h2>Pipelines</h2>
 				<form v-if="canEdit" class="row" @submit.prevent="createPipeline">
 					<label
-						>Название потока <input v-model="pipelineName" maxlength="255" required
+						>Pipeline name <input v-model="pipelineName" maxlength="255" required
 					/></label>
-					<button type="submit" :disabled="pipelineCreating">Создать поток</button>
+					<button type="submit" :disabled="pipelineCreating">Create pipeline</button>
 				</form>
-				<p v-if="pipelineLoading">Загрузка потоков…</p>
+				<p v-if="pipelineLoading">Loading pipelines…</p>
 				<p v-else-if="pipelineError" class="error">
-					{{ pipelineError }} <button @click="loadPipelines">Повторить</button>
+					{{ pipelineError }} <button @click="loadPipelines">Retry</button>
 				</p>
-				<p v-else-if="!pipelines.length" class="muted">Пока нет потоков.</p>
+				<p v-else-if="!pipelines.length" class="muted">No pipelines yet.</p>
 				<RouterLink
 					v-for="pipeline in pipelines"
 					:key="pipeline.id"
@@ -149,7 +149,7 @@ watch([organizationId, projectId], () => {
 				>
 			</section>
 			<section v-if="canEdit" class="card">
-				<h2>Настройки проекта</h2>
+				<h2>Project settings</h2>
 				<ProjectForm
 					:model-value="{
 						name: project.name,
@@ -157,14 +157,14 @@ watch([organizationId, projectId], () => {
 					}"
 					:fields="fields"
 					:submitting="saving"
-					submit-label="Сохранить изменения"
+					submit-label="Save changes"
 					@submit="save"
 				/>
 				<p v-if="error" class="error">{{ error }}</p>
 			</section>
 			<section v-else class="card">
-				<h2>Только просмотр</h2>
-				<p>Ваша роль не позволяет менять этот проект.</p>
+				<h2>Read-only</h2>
+				<p>Your role does not allow editing this project.</p>
 			</section>
 		</section>
 	</section>

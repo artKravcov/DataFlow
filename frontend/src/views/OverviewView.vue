@@ -24,10 +24,10 @@ const error = ref('')
 const page = ref(1)
 const lastPage = ref(1)
 const statuses: Record<Status, string> = {
-	queued: 'В очереди',
-	running: 'Выполняется',
-	succeeded: 'Завершён',
-	failed: 'Ошибка',
+	queued: 'Queued',
+	running: 'Running',
+	succeeded: 'Succeeded',
+	failed: 'Failed',
 }
 let sequence = 0
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -57,8 +57,8 @@ async function load(): Promise<void> {
 		if (current !== sequence) return
 		error.value =
 			reason instanceof ApiError && reason.status === 404
-				? 'Организация недоступна.'
-				: 'Не удалось загрузить историю запусков.'
+				? 'Organization is unavailable.'
+				: 'Could not load run history.'
 	} finally {
 		if (current === sequence) {
 			loading.value = false
@@ -89,24 +89,24 @@ function changePage(next: number): void {
 	<section class="page">
 		<div class="title-row">
 			<div>
-				<h1>Обзор</h1>
-				<p class="muted">Последние запуски всех потоков организации.</p>
+				<h1>Overview</h1>
+				<p class="muted">Recent runs across all organization pipelines.</p>
 			</div>
-			<button class="secondary" :disabled="loading" @click="load">Обновить</button>
+			<button class="secondary" :disabled="loading" @click="load">Refresh</button>
 		</div>
 		<section class="card stack">
 			<label
-				>Статус<select v-model="status">
-					<option value="">Все статусы</option>
-					<option value="queued">В очереди</option>
-					<option value="running">Выполняется</option>
-					<option value="succeeded">Завершён</option>
-					<option value="failed">Ошибка</option>
+				>Status<select v-model="status">
+					<option value="">All statuses</option>
+					<option value="queued">Queued</option>
+					<option value="running">Running</option>
+					<option value="succeeded">Succeeded</option>
+					<option value="failed">Failed</option>
 				</select></label
 			>
 			<p v-if="error" class="error" role="alert">{{ error }}</p>
-			<p v-else-if="loading && !items.length" class="muted">Загрузка запусков…</p>
-			<p v-else-if="!items.length" class="muted">Запусков с выбранным статусом пока нет.</p>
+			<p v-else-if="loading && !items.length" class="muted">Loading runs…</p>
+			<p v-else-if="!items.length" class="muted">No runs match the selected status.</p>
 			<ul v-else class="history">
 				<li v-for="item in items" :key="item.id">
 					<RouterLink
@@ -120,29 +120,29 @@ function changePage(next: number): void {
 						>#{{ item.id }} · {{ statuses[item.status] }} ·
 						{{ displayDate(item.created_at) }}</span
 					><span v-if="item.error_code" class="error"
-						>Код ошибки: {{ item.error_code }}</span
+						>Error code: {{ item.error_code }}</span
 					>
 				</li>
 			</ul>
-			<nav v-if="lastPage > 1" class="pagination" aria-label="Страницы истории запусков">
+			<nav v-if="lastPage > 1" class="pagination" aria-label="Run history pages">
 				<button
 					class="secondary"
 					:disabled="loading || page === 1"
 					@click="changePage(page - 1)"
 				>
-					Назад
+					Previous
 				</button>
-				<span>Страница {{ page }} из {{ lastPage }}</span>
+				<span>Page {{ page }} of {{ lastPage }}</span>
 				<button
 					class="secondary"
 					:disabled="loading || page === lastPage"
 					@click="changePage(page + 1)"
 				>
-					Далее
+					Next
 				</button>
 			</nav>
 			<RouterLink :to="{ name: 'projects', params: { org: orgId } }"
-				>Перейти к проектам</RouterLink
+				>Go to projects</RouterLink
 			>
 		</section>
 	</section>

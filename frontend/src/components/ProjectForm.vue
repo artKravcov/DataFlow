@@ -25,19 +25,19 @@ function submit(): void {
 <template>
 	<form class="stack" @submit.prevent="submit">
 		<label
-			>Название<input v-model="form.name" required maxlength="255" /><span
+			>Name<input v-model="form.name" required maxlength="255" /><span
 				v-if="fields.name"
 				class="field-error"
 				>{{ fields.name[0] }}</span
 			></label
 		><label
-			>Описание <span class="muted">(необязательно)</span
+			>Description <span class="muted">(optional)</span
 			><textarea v-model="form.description" maxlength="5000"></textarea
 			><span v-if="fields.description" class="field-error">{{
 				fields.description[0]
 			}}</span></label
 		><button :disabled="submitting">
-			{{ submitting ? 'Сохранение…' : submitLabel }}
+			{{ submitting ? 'Saving…' : submitLabel }}
 		</button>
 	</form>
 </template>

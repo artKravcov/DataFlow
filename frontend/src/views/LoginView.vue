@@ -25,7 +25,7 @@ async function submit(): Promise<void> {
 		error.value =
 			reason instanceof ApiError
 				? (reason.fields.email?.[0] ?? reason.message)
-				: 'Не удалось войти. Повторите попытку.'
+				: 'Sign in failed. Please try again.'
 	} finally {
 		submitting.value = false
 	}
@@ -34,8 +34,8 @@ async function submit(): Promise<void> {
 <template>
 	<main class="page auth">
 		<section class="card">
-			<h1>Вход в DataFlow</h1>
-			<p class="muted">Войдите, чтобы работать со своими организациями и проектами.</p>
+			<h1>Sign in to DataFlow</h1>
+			<p class="muted">Sign in to access your organizations and projects.</p>
 			<form class="stack" @submit.prevent="submit">
 				<label
 					>Email<input
@@ -44,7 +44,7 @@ async function submit(): Promise<void> {
 						type="email"
 						autocomplete="email" /></label
 				><label
-					>Пароль<input
+					>Password<input
 						v-model="password"
 						required
 						type="password"
@@ -52,10 +52,10 @@ async function submit(): Promise<void> {
 				/></label>
 				<p v-if="error" class="error" role="alert">{{ error }}</p>
 				<button :disabled="submitting">
-					{{ submitting ? 'Вход…' : 'Войти' }}
+					{{ submitting ? 'Signing in…' : 'Sign in' }}
 				</button>
 			</form>
-			<p>Нет аккаунта? <RouterLink to="/register">Зарегистрироваться</RouterLink></p>
+			<p>No account? <RouterLink to="/register">Register</RouterLink></p>
 		</section>
 	</main>
 </template>

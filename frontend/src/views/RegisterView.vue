@@ -24,7 +24,7 @@ async function submit(): Promise<void> {
 		if (reason instanceof ApiError) {
 			error.value = reason.message
 			fields.value = reason.fields
-		} else error.value = 'Не удалось зарегистрироваться. Повторите попытку.'
+		} else error.value = 'Registration failed. Please try again.'
 	} finally {
 		submitting.value = false
 	}
@@ -33,11 +33,11 @@ async function submit(): Promise<void> {
 <template>
 	<main class="page auth">
 		<section class="card">
-			<h1>Создать аккаунт</h1>
-			<p class="muted">Личная организация будет создана автоматически.</p>
+			<h1>Create an account</h1>
+			<p class="muted">A personal organization will be created automatically.</p>
 			<form class="stack" @submit.prevent="submit">
 				<label
-					>Имя<input v-model="name" required autocomplete="name" /><span
+					>Name<input v-model="name" required autocomplete="name" /><span
 						v-if="fields.name"
 						class="field-error"
 						>{{ fields.name[0] }}</span
@@ -49,7 +49,7 @@ async function submit(): Promise<void> {
 						>{{ fields.email[0] }}</span
 					></label
 				><label
-					>Пароль<input
+					>Password<input
 						v-model="password"
 						required
 						type="password"
@@ -59,7 +59,7 @@ async function submit(): Promise<void> {
 						fields.password[0]
 					}}</span></label
 				><label
-					>Подтвердите пароль<input
+					>Confirm password<input
 						v-model="passwordConfirmation"
 						required
 						type="password"
@@ -68,10 +68,10 @@ async function submit(): Promise<void> {
 				/></label>
 				<p v-if="error" class="error" role="alert">{{ error }}</p>
 				<button :disabled="submitting">
-					{{ submitting ? 'Создание…' : 'Зарегистрироваться' }}
+					{{ submitting ? 'Creating…' : 'Register' }}
 				</button>
 			</form>
-			<p>Уже есть аккаунт? <RouterLink to="/login">Войти</RouterLink></p>
+			<p>Already have an account? <RouterLink to="/login">Sign in</RouterLink></p>
 		</section>
 	</main>
 </template>

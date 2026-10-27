@@ -95,14 +95,24 @@ class DatabaseSeeder extends Seeder
         if ($asset->organization_id !== $organization->id || $asset->sha256 !== $digest || $asset->state !== 'ready') {
             throw new RuntimeException('Demo CSV asset has unexpected metadata.');
         }
-        $project = $organization->projects()->firstOrCreate(
-            ['name' => 'Демонстрация DataFlow'],
-            ['description' => 'CSV → Filter → Map → CSV'],
-        );
-        $pipeline = $organization->pipelines()->firstOrCreate(
-            ['project_id' => $project->id, 'name' => 'Платные заказы'],
-            ['revision' => 0, 'schema_version' => 1],
-        );
+        $project = $organization->projects()->where('name', 'Demo DataFlow')->first();
+        if (! $project) {
+            $project = $organization->projects()->where('name', 'Демонстрация DataFlow')->first();
+            if ($project) {
+                $project->update(['name' => 'Demo DataFlow']);
+            } else {
+                $project = $organization->projects()->create(['name' => 'Demo DataFlow', 'description' => 'CSV → Filter → Map → CSV']);
+            }
+        }
+        $pipeline = $organization->pipelines()->where('project_id', $project->id)->where('name', 'Paid orders')->first();
+        if (! $pipeline) {
+            $pipeline = $organization->pipelines()->where('project_id', $project->id)->where('name', 'Платные заказы')->first();
+            if ($pipeline) {
+                $pipeline->update(['name' => 'Paid orders']);
+            } else {
+                $pipeline = $organization->pipelines()->create(['project_id' => $project->id, 'name' => 'Paid orders', 'revision' => 0, 'schema_version' => 1]);
+            }
+        }
         if ($pipeline->nodes()->exists() || $pipeline->edges()->exists()) {
             return;
         }

@@ -64,7 +64,7 @@ async function toApiError(response: Response): Promise<ApiError> {
 	return new ApiError(
 		response.status,
 		payload.error?.code ?? 'REQUEST_FAILED',
-		payload.error?.message ?? 'Не удалось выполнить запрос.',
+		payload.error?.message ?? 'The request could not be completed.',
 		payload.error?.fields ?? {},
 	)
 }

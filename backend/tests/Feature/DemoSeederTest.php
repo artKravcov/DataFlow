@@ -26,7 +26,7 @@ class DemoSeederTest extends TestCase
         $organization = Organization::where('name', 'DataFlow Demo Organization')->firstOrFail();
         $admin = User::where('email', 'admin@example.test')->firstOrFail();
         $asset = FileAsset::where('organization_id', $organization->id)->where('storage_key', 'assets/demo-paid-orders-v1.csv')->firstOrFail();
-        $pipeline = Pipeline::where('organization_id', $organization->id)->where('name', 'Платные заказы')->firstOrFail();
+        $pipeline = Pipeline::where('organization_id', $organization->id)->where('name', 'Paid orders')->firstOrFail();
         self::assertSame("order_id,status,total\n101,paid,12.50\n102,pending,8.00\n103,paid,20.00\n", Storage::disk('local')->get($asset->storage_key));
         self::assertSame(1, $pipeline->revision);
         self::assertSame(4, $pipeline->nodes()->count());
@@ -42,7 +42,7 @@ class DemoSeederTest extends TestCase
 
         $this->seed(DatabaseSeeder::class);
 
-        self::assertSame(1, Pipeline::where('organization_id', $organization->id)->where('name', 'Платные заказы')->count());
+        self::assertSame(1, Pipeline::where('organization_id', $organization->id)->where('name', 'Paid orders')->count());
         self::assertSame(4, $pipeline->fresh()->nodes()->count());
         self::assertSame(3, $pipeline->fresh()->edges()->count());
     }
